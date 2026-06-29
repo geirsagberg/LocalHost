@@ -22,36 +22,36 @@ struct MenuBarContent: View {
 
         Divider()
 
-        if viewModel.visibleSites.isEmpty {
+        if viewModel.visibleSitePresentations.isEmpty {
             Text("No localhost sites")
         } else {
-            ForEach(viewModel.visibleSites) { site in
-                Menu(viewModel.menuTitle(for: site)) {
+            ForEach(viewModel.visibleSitePresentations) { presentation in
+                Menu(presentation.menuTitle) {
                     Button {
-                        viewModel.open(site)
+                        viewModel.open(presentation)
                     } label: {
                         Label("Open", systemImage: "arrow.up.right.square")
                     }
 
                     Button {
-                        viewModel.copyURL(site)
+                        viewModel.copyURL(presentation)
                     } label: {
                         Label("Copy URL", systemImage: "doc.on.doc")
                     }
 
-                    Toggle("Hide in Default View", isOn: hiddenBinding(for: site))
+                    Toggle("Hide in Default View", isOn: hiddenBinding(for: presentation))
 
                     Divider()
 
                     Button {
-                        viewModel.killProcess(for: site)
+                        viewModel.killProcess(for: presentation)
                     } label: {
                         Label(
-                            viewModel.isKilling(site) ? "Killing..." : "Kill Process",
+                            viewModel.isKilling(presentation) ? "Killing..." : "Kill Process",
                             systemImage: "stop.circle"
                         )
                     }
-                    .disabled(viewModel.isKilling(site))
+                    .disabled(viewModel.isKilling(presentation))
                 }
             }
         }
@@ -63,10 +63,10 @@ struct MenuBarContent: View {
         }
     }
 
-    private func hiddenBinding(for site: LocalhostSite) -> Binding<Bool> {
+    private func hiddenBinding(for presentation: SitePresentation) -> Binding<Bool> {
         Binding(
-            get: { viewModel.isHidden(site) },
-            set: { viewModel.setHidden($0, for: site) }
+            get: { viewModel.isHidden(presentation) },
+            set: { viewModel.setHidden($0, for: presentation) }
         )
     }
 }
