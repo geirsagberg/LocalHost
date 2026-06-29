@@ -30,4 +30,8 @@ open .build/LocalHostMonitor.app
 
 The build script needs either `rsvg-convert` from librsvg or ImageMagick's `magick` command to render `Resources/AppIcon.svg` into a macOS `.icns`.
 
+## Manual GitHub Release
+
+Run the `Build macOS Release` workflow from the GitHub Actions tab. It creates a GitHub Release and attaches both a zipped `.app` bundle and the raw macOS executable.
+
 Overrides are stored in `~/Library/Application Support/LocalHostMonitor/Sites.json`.

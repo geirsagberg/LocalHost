@@ -1,0 +1,100 @@
+name: Build macOS Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: "Release tag to create, for example v0.1.0. Defaults to manual-<run number>."
+        required: false
+        type: string
+      release_name:
+        description: "Release title. Defaults to the release tag."
+        required: false
+        type: string
+      prerelease:
+        description: "Mark the release as a prerelease."
+        required: false
+        default: true
+        type: boolean
+
+permissions:
+  contents: write
+
+jobs:
+  build-release:
+    name: Build and release macOS app
+    runs-on: macos-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Show tool versions
+        run: |
+          swift --version
+          xcodebuild -version
+
+      - name: Install icon renderer
+        run: brew install librsvg
+
+      - name: Run tests
+        run: swift test
+
+      - name: Build app bundle
+        run: ./scripts/build-app.sh
+
+      - name: Package release assets
+        id: package
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          mkdir -p dist
+
+          arch="$(uname -m)"
+          tag_name="${{ inputs.tag_name }}"
+          if [[ -z "$tag_name" ]]; then
+            tag_name="manual-${GITHUB_RUN_NUMBER}"
+          fi
+
+          release_name="${{ inputs.release_name }}"
+          if [[ -z "$release_name" ]]; then
+            release_name="$tag_name"
+          fi
+
+          app_zip="dist/LocalHostMonitor-${tag_name}-macos-${arch}.app.zip"
+          binary="dist/LocalHostMonitor-${tag_name}-macos-${arch}"
+
+          ditto -c -k --keepParent .build/LocalHostMonitor.app "$app_zip"
+          cp .build/release/LocalHostMonitor "$binary"
+          chmod +x "$binary"
+
+          {
+            echo "tag_name=$tag_name"
+            echo "release_name=$release_name"
+            echo "app_zip=$app_zip"
+            echo "binary=$binary"
+            echo "arch=$arch"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          args=(
+            "${{ steps.package.outputs.tag_name }}"
+            "${{ steps.package.outputs.app_zip }}"
+            "${{ steps.package.outputs.binary }}"
+            --target "$GITHUB_SHA"
+            --title "${{ steps.package.outputs.release_name }}"
+            --notes "Manual macOS build from ${GITHUB_SHA}. Includes the zipped .app bundle and the raw executable for ${{ steps.package.outputs.arch }}."
+          )
+
+          if [[ "${{ inputs.prerelease }}" == "true" ]]; then
+            args+=(--prerelease)
+          fi
+
+          gh release create "${args[@]}"
