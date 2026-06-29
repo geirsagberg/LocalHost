@@ -25,8 +25,30 @@ struct MenuBarContent: View {
             Text("No localhost sites")
         } else {
             ForEach(viewModel.visibleSites) { site in
-                Button(viewModel.menuTitle(for: site)) {
-                    viewModel.open(site)
+                Menu(viewModel.menuTitle(for: site)) {
+                    Button {
+                        viewModel.open(site)
+                    } label: {
+                        Label("Open", systemImage: "arrow.up.right.square")
+                    }
+
+                    Button {
+                        viewModel.copyURL(site)
+                    } label: {
+                        Label("Copy URL", systemImage: "doc.on.doc")
+                    }
+
+                    Divider()
+
+                    Button {
+                        viewModel.killProcess(for: site)
+                    } label: {
+                        Label(
+                            viewModel.isKilling(site) ? "Killing..." : "Kill Process",
+                            systemImage: "stop.circle"
+                        )
+                    }
+                    .disabled(viewModel.isKilling(site))
                 }
             }
         }

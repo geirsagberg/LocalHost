@@ -6,6 +6,7 @@ import LocalHostMonitorCore
 final class SitesViewModel: ObservableObject {
     @Published private(set) var sites: [LocalhostSite] = []
     @Published var showsAllResponses = false
+    @Published var alertMessage: UserAlertMessage?
     @Published private(set) var overrides: [String: SiteOverride] = [:] {
         didSet {
             preferencesStore.save(overrides)
@@ -13,16 +14,20 @@ final class SitesViewModel: ObservableObject {
     }
     @Published private(set) var isScanning = false
     @Published private(set) var lastScanDate: Date?
+    @Published private(set) var killingPorts: Set<Int> = []
 
     private let scanner: LocalhostScanner
+    private let processTerminator: PortProcessTerminator
     private let preferencesStore: PreferencesStore
     private var refreshLoop: Task<Void, Never>?
 
     init(
         scanner: LocalhostScanner = LocalhostScanner(),
+        processTerminator: PortProcessTerminator = PortProcessTerminator(),
         preferencesStore: PreferencesStore = PreferencesStore()
     ) {
         self.scanner = scanner
+        self.processTerminator = processTerminator
         self.preferencesStore = preferencesStore
         self.overrides = preferencesStore.load()
 
@@ -156,6 +161,37 @@ final class SitesViewModel: ObservableObject {
         NSPasteboard.general.setString(site.displayURLString, forType: .string)
     }
 
+    func isKilling(_ site: LocalhostSite) -> Bool {
+        killingPorts.contains(site.port)
+    }
+
+    func killProcess(for site: LocalhostSite) {
+        guard !killingPorts.contains(site.port) else {
+            return
+        }
+
+        let siteTitle = title(for: site)
+        killingPorts.insert(site.port)
+
+        Task {
+            do {
+                _ = try await processTerminator.terminateProcessListening(on: site.port)
+                killingPorts.remove(site.port)
+                try? await Task.sleep(nanoseconds: 350_000_000)
+                await refresh()
+            } catch PortProcessTerminationError.administratorPromptCancelled {
+                killingPorts.remove(site.port)
+            } catch {
+                killingPorts.remove(site.port)
+                alertMessage = UserAlertMessage(
+                    title: "Couldn't kill \(siteTitle)",
+                    message: error.localizedDescription
+                )
+                await refresh()
+            }
+        }
+    }
+
     func menuTitle(for site: LocalhostSite) -> String {
         let title = title(for: site)
         let statusSuffix = site.isOK ? "" : " HTTP \(site.httpStatusCode)"
@@ -183,4 +219,10 @@ private extension String {
     var trimmedForDisplay: String {
         trimmingCharacters(in: .whitespacesAndNewlines)
     }
+}
+
+struct UserAlertMessage: Identifiable {
+    let id = UUID()
+    let title: String
+    let message: String
 }

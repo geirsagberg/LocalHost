@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="base" x1="130" y1="72" x2="904" y2="952" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#1F3F36"/>
+      <stop offset="0.48" stop-color="#10151A"/>
+      <stop offset="1" stop-color="#243017"/>
+    </linearGradient>
+    <linearGradient id="panel" x1="246" y1="250" x2="790" y2="782" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#2A3238"/>
+      <stop offset="1" stop-color="#11161B"/>
+    </linearGradient>
+    <linearGradient id="glass" x1="264" y1="250" x2="734" y2="732" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.22"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0.03"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="278" y1="294" x2="734" y2="756" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#A8FF6A"/>
+      <stop offset="1" stop-color="#37E6C2"/>
+    </linearGradient>
+    <filter id="soft-shadow" x="-20%" y="-20%" width="140%" height="150%">
+      <feDropShadow dx="0" dy="34" stdDeviation="28" flood-color="#000000" flood-opacity="0.38"/>
+      <feDropShadow dx="0" dy="6" stdDeviation="8" flood-color="#000000" flood-opacity="0.25"/>
+    </filter>
+  </defs>
+
+  <rect x="24" y="24" width="976" height="976" rx="220" fill="url(#base)"/>
+  <path d="M74 271C212 151 369 117 539 170C687 216 817 184 945 95V320C807 405 660 430 505 371C345 311 198 338 74 453V271Z" fill="#37E6C2" opacity="0.16"/>
+  <path d="M96 812L932 365V641L292 948C210 916 145 870 96 812Z" fill="#FFF26A" opacity="0.10"/>
+  <path d="M197 90L921 813C875 882 812 933 733 966L58 291C86 209 134 142 197 90Z" fill="#FFFFFF" opacity="0.055"/>
+
+  <g filter="url(#soft-shadow)">
+    <rect x="188" y="218" width="648" height="590" rx="110" fill="#0D1116" opacity="0.72"/>
+    <rect x="220" y="250" width="584" height="526" rx="82" fill="url(#panel)" stroke="#FFFFFF" stroke-opacity="0.14" stroke-width="3"/>
+    <rect x="244" y="274" width="536" height="478" rx="62" fill="url(#glass)"/>
+
+    <g transform="translate(290 296) scale(18.5)" fill="none" stroke="#F7FFF7" stroke-width="1.95" stroke-linecap="round" stroke-linejoin="round">
+      <rect width="20" height="8" x="2" y="2" rx="2" ry="2"/>
+      <rect width="20" height="8" x="2" y="14" rx="2" ry="2"/>
+      <line x1="6" x2="6.01" y1="6" y2="6"/>
+      <line x1="6" x2="6.01" y1="18" y2="18"/>
+    </g>
+
+    <rect x="328" y="708" width="368" height="36" rx="18" fill="#080B0E" opacity="0.58"/>
+    <rect x="356" y="722" width="184" height="8" rx="4" fill="url(#accent)" opacity="0.9"/>
+    <circle cx="664" cy="726" r="15" fill="url(#accent)"/>
+  </g>
+
+  <rect x="24" y="24" width="976" height="976" rx="220" fill="none" stroke="#FFFFFF" stroke-opacity="0.18" stroke-width="3"/>
+</svg>

@@ -24,6 +24,13 @@ struct ContentView: View {
             }
         }
         .background(Color(nsColor: .windowBackgroundColor))
+        .alert(item: $viewModel.alertMessage) { message in
+            Alert(
+                title: Text(message.title),
+                message: Text(message.message),
+                dismissButton: .default(Text("OK"))
+            )
+        }
     }
 }
 
@@ -183,6 +190,23 @@ private struct SiteRow: View {
                 .buttonStyle(.borderless)
                 .help("Copy URL")
 
+                if viewModel.isKilling(site) {
+                    ProgressView()
+                        .controlSize(.small)
+                        .frame(width: 18, height: 18)
+                        .help("Killing process")
+                } else {
+                    Button {
+                        viewModel.killProcess(for: site)
+                    } label: {
+                        Image(systemName: "stop.circle")
+                            .frame(width: 18, height: 18)
+                    }
+                    .buttonStyle(.borderless)
+                    .foregroundStyle(.red)
+                    .help("Kill process")
+                }
+
                 Button {
                     viewModel.open(site)
                 } label: {
@@ -192,7 +216,7 @@ private struct SiteRow: View {
                 .buttonStyle(.borderless)
                 .help("Open")
             }
-            .frame(width: 112, alignment: .trailing)
+            .frame(width: 140, alignment: .trailing)
         }
         .padding(10)
         .background(
