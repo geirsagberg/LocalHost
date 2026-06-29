@@ -96,33 +96,49 @@ private struct EmptyStateView: View {
 
     var body: some View {
         VStack(spacing: 14) {
-            Image(systemName: "globe")
-                .font(.system(size: 32, weight: .regular))
-                .foregroundStyle(.secondary)
+            if isLoadingInitialSites {
+                ProgressView()
+                    .controlSize(.large)
+                    .frame(width: 32, height: 32)
+            } else {
+                Image(systemName: "globe")
+                    .font(.system(size: 32, weight: .regular))
+                    .foregroundStyle(.secondary)
+            }
 
             Text(title)
                 .font(.headline)
                 .foregroundStyle(.primary)
 
-            Button {
-                Task { await viewModel.refresh() }
-            } label: {
-                Image(systemName: "arrow.clockwise")
-                    .frame(width: 18, height: 18)
+            if !isLoadingInitialSites {
+                Button {
+                    Task { await viewModel.refresh() }
+                } label: {
+                    Image(systemName: "arrow.clockwise")
+                        .frame(width: 18, height: 18)
+                }
+                .buttonStyle(.bordered)
+                .disabled(viewModel.isScanning)
+                .help("Refresh")
             }
-            .buttonStyle(.bordered)
-            .disabled(viewModel.isScanning)
-            .help("Refresh")
         }
         .padding(32)
     }
 
     private var title: String {
+        if isLoadingInitialSites {
+            return "Loading localhost sites"
+        }
+
         if !viewModel.sites.isEmpty && !viewModel.showsAllResponses {
             return "No visible localhost sites"
         }
 
         return "No localhost sites"
+    }
+
+    private var isLoadingInitialSites: Bool {
+        viewModel.isScanning && viewModel.lastScanDate == nil
     }
 }
 
@@ -282,115 +298,86 @@ private struct MetadataBadge: View {
 
 private struct EmojiPickerButton: View {
     @Binding var text: String
+    @State private var isShowingPicker = false
 
     var body: some View {
-        EmojiPickerRepresentable(text: $text)
-            .frame(width: 34, height: 34)
-            .fixedSize()
-            .help("Choose emoji")
-    }
-}
-
-private struct EmojiPickerRepresentable: NSViewRepresentable {
-    @Binding var text: String
-
-    func makeNSView(context: Context) -> EmojiPickerNSView {
-        let view = EmojiPickerNSView()
-        view.onInsertText = { insertedText in
-            text = insertedText
+        Button {
+            isShowingPicker = true
+        } label: {
+            Text(text.isEmpty ? "😀" : text)
+                .font(.system(size: 20))
+                .frame(width: 34, height: 34)
         }
-
-        return view
-    }
-
-    func updateNSView(_ view: EmojiPickerNSView, context: Context) {
-        view.emoji = text.isEmpty ? "😀" : text
-        view.onInsertText = { insertedText in
-            text = insertedText
+        .buttonStyle(EmojiSquareButtonStyle())
+        .fixedSize()
+        .help("Choose emoji")
+        .popover(isPresented: $isShowingPicker, arrowEdge: .leading) {
+            EmojiPickerPopover(
+                selectedEmoji: $text,
+                isShowingPicker: $isShowingPicker
+            )
         }
     }
 }
 
-private final class EmojiPickerNSView: NSView {
-    var onInsertText: ((String) -> Void)?
-
-    var emoji: String {
-        get { button.title }
-        set { button.title = newValue }
-    }
-
-    private let button = NSButton()
-    private let textReceiver = EmojiTextReceiver()
-
-    override init(frame frameRect: NSRect) {
-        super.init(frame: frameRect)
-        setupViews()
-    }
-
-    required init?(coder: NSCoder) {
-        super.init(coder: coder)
-        setupViews()
-    }
-
-    override var intrinsicContentSize: NSSize {
-        NSSize(width: 34, height: 34)
-    }
-
-    override func layout() {
-        super.layout()
-        button.frame = bounds
-        textReceiver.frame = NSRect(x: -10, y: -10, width: 1, height: 1)
-    }
-
-    private func setupViews() {
-        button.bezelStyle = .rounded
-        button.font = .systemFont(ofSize: 20)
-        button.target = self
-        button.action = #selector(showCharacterPalette)
-        button.toolTip = "Choose emoji"
-        button.setAccessibilityLabel("Choose emoji")
-        addSubview(button)
-
-        textReceiver.isRichText = false
-        textReceiver.isEditable = true
-        textReceiver.isSelectable = true
-        textReceiver.drawsBackground = false
-        textReceiver.alphaValue = 0.01
-        textReceiver.onInsertText = { [weak self] insertedText in
-            self?.onInsertText?(insertedText)
-        }
-        addSubview(textReceiver)
-
-        setContentHuggingPriority(.required, for: .horizontal)
-        setContentCompressionResistancePriority(.required, for: .horizontal)
-    }
-
-    @objc private func showCharacterPalette() {
-        textReceiver.string = ""
-        window?.makeFirstResponder(textReceiver)
-        NSApplication.shared.orderFrontCharacterPalette(self)
+private struct EmojiSquareButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .background(
+                RoundedRectangle(cornerRadius: 7)
+                    .fill(
+                        configuration.isPressed
+                            ? Color.accentColor.opacity(0.24)
+                            : Color(nsColor: .controlBackgroundColor)
+                    )
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 7)
+                    .stroke(Color(nsColor: .separatorColor).opacity(0.55), lineWidth: 1)
+            )
     }
 }
 
-private final class EmojiTextReceiver: NSTextView {
-    var onInsertText: ((String) -> Void)?
+private struct EmojiPickerPopover: View {
+    @Binding var selectedEmoji: String
+    @Binding var isShowingPicker: Bool
 
-    override var intrinsicContentSize: NSSize {
-        NSSize(width: 34, height: 34)
-    }
+    private let columns = Array(repeating: GridItem(.fixed(30), spacing: 4), count: 8)
 
-    override func insertText(_ insertString: Any, replacementRange: NSRange) {
-        handleInsertedText(insertString)
-        super.insertText(insertString, replacementRange: replacementRange)
-    }
-
-    private func handleInsertedText(_ insertedText: Any) {
-        if let attributedString = insertedText as? NSAttributedString {
-            onInsertText?(attributedString.string)
-        } else if let string = insertedText as? String {
-            onInsertText?(string)
+    var body: some View {
+        LazyVGrid(columns: columns, spacing: 4) {
+            ForEach(Self.choices, id: \.self) { emoji in
+                Button {
+                    selectedEmoji = emoji
+                    isShowingPicker = false
+                } label: {
+                    Text(emoji)
+                        .font(.system(size: 18))
+                        .frame(width: 30, height: 30)
+                }
+                .buttonStyle(.plain)
+                .background(
+                    RoundedRectangle(cornerRadius: 6)
+                        .fill(
+                            emoji == selectedEmoji
+                                ? Color.accentColor.opacity(0.22)
+                                : Color.clear
+                        )
+                )
+                .help(emoji)
+            }
         }
+        .padding(8)
     }
+
+    private static let choices = [
+        "😀", "😎", "🤓", "🥳", "🤖", "👀", "🧠", "💡",
+        "🌐", "🚀", "🧭", "🧪", "🛠️", "✨", "⚡️", "📡",
+        "🪄", "🔭", "🧩", "🗺️", "📍", "💻", "🖥️", "🧱",
+        "🎛️", "📦", "🔌", "🧰", "🏗️", "🕹️", "🧵", "📊",
+        "🟢", "🔵", "🟣", "🟠", "⭐️", "🔥", "💎", "🍋",
+        "✅", "🚧", "🧯", "🔒", "🧲", "🎯", "🏷️", "📌"
+    ]
 }
 
 private struct ClickAwayDefocusModifier: ViewModifier {

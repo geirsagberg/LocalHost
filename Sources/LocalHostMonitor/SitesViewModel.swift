@@ -35,7 +35,7 @@ final class SitesViewModel: ObservableObject {
             await self?.refresh()
 
             while !Task.isCancelled {
-                try? await Task.sleep(nanoseconds: 8_000_000_000)
+                try? await Task.sleep(nanoseconds: 60_000_000_000)
                 await self?.refresh()
             }
         }
