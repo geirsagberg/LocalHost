@@ -20,15 +20,27 @@ public struct WebMetadataFetcher: Sendable {
     }
 
     public func fetchMetadata(for endpoint: ListeningEndpoint) async -> SiteMetadata? {
+        var responses: [SiteMetadata] = []
+
         for scheme in ["http", "https"] {
             for probeHost in probeHosts(for: endpoint) {
-                if let metadata = await fetchMetadata(scheme: scheme, probeHost: probeHost, port: endpoint.port) {
-                    return metadata
+                if let metadata = await fetchMetadata(
+                    scheme: scheme,
+                    probeHost: probeHost,
+                    port: endpoint.port
+                ) {
+                    responses.append(metadata)
                 }
             }
         }
 
-        return nil
+        return Self.preferredMetadata(from: responses)
+    }
+
+    static func preferredMetadata(from responses: [SiteMetadata]) -> SiteMetadata? {
+        responses.min { lhs, rhs in
+            statusPreference(lhs.statusCode) < statusPreference(rhs.statusCode)
+        }
     }
 
     public static func extractTitle(from data: Data) -> String? {
@@ -109,6 +121,21 @@ public struct WebMetadataFetcher: Sendable {
             return ["localhost", "127.0.0.1"]
         default:
             return ["127.0.0.1", "localhost"]
+        }
+    }
+
+    private static func statusPreference(_ statusCode: Int) -> (Int, Int) {
+        switch statusCode {
+        case 200..<300:
+            return (0, statusCode)
+        case 300..<400:
+            return (1, statusCode)
+        case 400..<500:
+            return (2, statusCode)
+        case 500..<600:
+            return (3, statusCode)
+        default:
+            return (4, statusCode)
         }
     }
 

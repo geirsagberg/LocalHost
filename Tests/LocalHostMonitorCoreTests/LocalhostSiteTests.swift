@@ -2,11 +2,13 @@ import XCTest
 @testable import LocalHostMonitorCore
 
 final class LocalhostSiteTests: XCTestCase {
-    func testIsOKOnlyMatchesStatus200() throws {
+    func testIsOKMatchesSuccessfulAndRedirectStatuses() throws {
         let okSite = try makeSite(statusCode: 200)
+        let redirectSite = try makeSite(statusCode: 302)
         let notFoundSite = try makeSite(statusCode: 404)
 
         XCTAssertTrue(okSite.isOK)
+        XCTAssertTrue(redirectSite.isOK)
         XCTAssertFalse(notFoundSite.isOK)
     }
 

@@ -32,7 +32,7 @@ public struct LocalhostSite: Identifiable, Equatable, Sendable {
     }
 
     public var isOK: Bool {
-        httpStatusCode == 200
+        (200..<400).contains(httpStatusCode)
     }
 
     public var fallbackTitle: String {

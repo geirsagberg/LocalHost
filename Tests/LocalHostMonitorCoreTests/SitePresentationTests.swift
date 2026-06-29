@@ -69,9 +69,10 @@ final class SitePresentationTests: XCTestCase {
 
     func testVisiblePresentationsRespectDefaultViewRules() throws {
         let visibleSite = try makeSite(port: 3000, statusCode: 200)
+        let redirectSite = try makeSite(port: 4000, statusCode: 302)
         let hiddenSite = try makeSite(port: 5173, statusCode: 200)
         let notOKSite = try makeSite(port: 8080, statusCode: 500)
-        let sites = [visibleSite, hiddenSite, notOKSite]
+        let sites = [visibleSite, redirectSite, hiddenSite, notOKSite]
         let overrides = [
             hiddenSite.preferenceKey: SiteOverride(isHidden: true)
         ]
@@ -87,8 +88,8 @@ final class SitePresentationTests: XCTestCase {
             showsAllResponses: true
         )
 
-        XCTAssertEqual(defaultView.map(\.site.port), [3000])
-        XCTAssertEqual(allEntries.map(\.site.port), [3000, 5173, 8080])
+        XCTAssertEqual(defaultView.map(\.site.port), [3000, 4000])
+        XCTAssertEqual(allEntries.map(\.site.port), [3000, 4000, 5173, 8080])
     }
 
     func testTitleOverrideValueDropsEquivalentTitles() throws {
