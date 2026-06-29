@@ -1,5 +1,6 @@
 import AppKit
 import SwiftUI
+import LocalHostMonitorCore
 
 struct MenuBarContent: View {
     @ObservedObject var viewModel: SitesViewModel
@@ -16,7 +17,7 @@ struct MenuBarContent: View {
         }
         .disabled(viewModel.isScanning)
 
-        Toggle("View all responses", isOn: $viewModel.showsAllResponses)
+        Toggle("View all entries", isOn: $viewModel.showsAllResponses)
             .disabled(viewModel.sites.isEmpty)
 
         Divider()
@@ -38,6 +39,8 @@ struct MenuBarContent: View {
                         Label("Copy URL", systemImage: "doc.on.doc")
                     }
 
+                    Toggle("Hide in Default View", isOn: hiddenBinding(for: site))
+
                     Divider()
 
                     Button {
@@ -58,5 +61,12 @@ struct MenuBarContent: View {
         Button("Quit LocalHost") {
             NSApp.terminate(nil)
         }
+    }
+
+    private func hiddenBinding(for site: LocalhostSite) -> Binding<Bool> {
+        Binding(
+            get: { viewModel.isHidden(site) },
+            set: { viewModel.setHidden($0, for: site) }
+        )
     }
 }

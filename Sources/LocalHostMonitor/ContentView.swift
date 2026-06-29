@@ -53,7 +53,7 @@ private struct HeaderView: View {
                 .toggleStyle(.switch)
                 .controlSize(.small)
                 .disabled(viewModel.sites.isEmpty)
-                .help("Show localhost sites that return any HTTP status")
+                .help("Show hidden sites and localhost sites that return any HTTP status")
 
             if viewModel.isScanning {
                 ProgressView()
@@ -117,7 +117,7 @@ private struct EmptyStateView: View {
 
     private var title: String {
         if !viewModel.sites.isEmpty && !viewModel.showsAllResponses {
-            return "No 200 OK localhost sites"
+            return "No visible localhost sites"
         }
 
         return "No localhost sites"
@@ -163,6 +163,12 @@ private struct SiteRow: View {
             Spacer(minLength: 4)
 
             HStack(spacing: 4) {
+                Toggle("Hide", isOn: hiddenBinding)
+                    .toggleStyle(.checkbox)
+                    .controlSize(.small)
+                    .fixedSize()
+                    .help("Show only when View all is enabled")
+
                 Button {
                     viewModel.clearEmoji(for: site)
                 } label: {
@@ -216,7 +222,7 @@ private struct SiteRow: View {
                 .buttonStyle(.borderless)
                 .help("Open")
             }
-            .frame(width: 140, alignment: .trailing)
+            .frame(width: 182, alignment: .trailing)
         }
         .padding(10)
         .background(
@@ -243,8 +249,18 @@ private struct SiteRow: View {
         )
     }
 
+    private var hiddenBinding: Binding<Bool> {
+        Binding(
+            get: { viewModel.isHidden(site) },
+            set: { viewModel.setHidden($0, for: site) }
+        )
+    }
+
     private var subtitle: String {
         var parts = [site.displayURLString, "HTTP \(site.httpStatusCode)"]
+        if viewModel.isHidden(site) {
+            parts.append("Hidden")
+        }
         if let processName = site.processName, !processName.isEmpty {
             parts.append(processName)
         }

@@ -46,15 +46,17 @@ final class SitesViewModel: ObservableObject {
     }
 
     var visibleSites: [LocalhostSite] {
-        showsAllResponses ? sites : sites.filter(\.isOK)
+        showsAllResponses ? sites : sites.filter { site in
+            site.isOK && !isHidden(site)
+        }
     }
 
-    var hiddenResponseCount: Int {
+    var filteredSiteCount: Int {
         sites.count - visibleSites.count
     }
 
     var siteCountText: String {
-        if hiddenResponseCount > 0 {
+        if filteredSiteCount > 0 {
             return "\(visibleSites.count)/\(sites.count)"
         }
 
@@ -149,6 +151,16 @@ final class SitesViewModel: ObservableObject {
     func resetEmoji(for site: LocalhostSite) {
         updateOverride(for: site.preferenceKey) { override in
             override.emoji = .automatic
+        }
+    }
+
+    func isHidden(_ site: LocalhostSite) -> Bool {
+        overrides[site.preferenceKey]?.isHidden ?? false
+    }
+
+    func setHidden(_ isHidden: Bool, for site: LocalhostSite) {
+        updateOverride(for: site.preferenceKey) { override in
+            override.isHidden = isHidden
         }
     }
 

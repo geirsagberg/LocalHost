@@ -16,6 +16,24 @@ final class SitePreferencesTests: XCTestCase {
 
     func testClearedEmojiKeepsOverrideAlive() {
         XCTAssertFalse(SiteOverride(title: nil, emoji: .cleared).isEmpty)
+        XCTAssertFalse(SiteOverride(title: nil, emoji: .automatic, isHidden: true).isEmpty)
         XCTAssertTrue(SiteOverride(title: "  ", emoji: .automatic).isEmpty)
+    }
+
+    func testMissingHiddenFlagDefaultsToFalse() throws {
+        let json = """
+        {
+          "title": "Dashboard",
+          "emoji": {
+            "type": "automatic"
+          }
+        }
+        """
+
+        let override = try JSONDecoder().decode(SiteOverride.self, from: Data(json.utf8))
+
+        XCTAssertEqual(override.title, "Dashboard")
+        XCTAssertEqual(override.emoji, .automatic)
+        XCTAssertFalse(override.isHidden)
     }
 }

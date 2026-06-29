@@ -5,9 +5,10 @@ A tiny native macOS app for seeing running localhost websites.
 ## Features
 
 - Scans listening local TCP ports and shows the ones that respond over HTTP or HTTPS.
-- Shows only `200 OK` sites by default, with a toggle to view every HTTP response.
+- Shows only visible `200 OK` sites by default, with a toggle to view every entry.
 - Infers each page title from the root HTML document.
 - Lets you override the displayed title.
+- Lets you hide individual entries from the default view.
 - Assigns a deterministic emoji per site.
 - Lets you clear or override the emoji.
 - Can terminate the process listening on a site port, with an administrator prompt if needed.
