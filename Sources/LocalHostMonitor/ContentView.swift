@@ -57,12 +57,6 @@ private struct HeaderView: View {
                 .disabled(viewModel.sites.isEmpty)
                 .help("Show hidden sites and localhost sites that return any HTTP status")
 
-            if viewModel.isScanning {
-                ProgressView()
-                    .controlSize(.small)
-                    .frame(width: 24, height: 24)
-            }
-
             if let lastScanDate = viewModel.lastScanDate {
                 Text(Self.timeFormatter.string(from: lastScanDate))
                     .font(.caption.monospacedDigit())
@@ -72,8 +66,14 @@ private struct HeaderView: View {
             Button {
                 Task { await viewModel.refresh() }
             } label: {
-                Image(systemName: "arrow.clockwise")
-                    .frame(width: 18, height: 18)
+                if viewModel.isScanning {
+                    ProgressView()
+                        .controlSize(.small)
+                        .frame(width: 18, height: 18)
+                } else {
+                    Image(systemName: "arrow.clockwise")
+                        .frame(width: 18, height: 18)
+                }
             }
             .buttonStyle(.bordered)
             .disabled(viewModel.isScanning)

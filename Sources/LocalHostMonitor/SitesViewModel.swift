@@ -143,6 +143,7 @@ final class SitesViewModel: ObservableObject {
 
         let siteTitle = title(for: presentation)
         killingPorts.insert(site.port)
+        sites.removeAll { $0.id == site.id }
 
         Task {
             do {
@@ -152,6 +153,7 @@ final class SitesViewModel: ObservableObject {
                 await refresh()
             } catch PortProcessTerminationError.administratorPromptCancelled {
                 killingPorts.remove(site.port)
+                await refresh()
             } catch {
                 killingPorts.remove(site.port)
                 alertMessage = UserAlertMessage(

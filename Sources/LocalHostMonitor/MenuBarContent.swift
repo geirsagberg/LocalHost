@@ -26,32 +26,10 @@ struct MenuBarContent: View {
             Text("No localhost sites")
         } else {
             ForEach(viewModel.visibleSitePresentations) { presentation in
-                Menu(presentation.menuTitle) {
-                    Button {
-                        viewModel.open(presentation)
-                    } label: {
-                        Label("Open", systemImage: "arrow.up.right.square")
-                    }
-
-                    Button {
-                        viewModel.copyURL(presentation)
-                    } label: {
-                        Label("Copy URL", systemImage: "doc.on.doc")
-                    }
-
-                    Toggle("Hide in Default View", isOn: hiddenBinding(for: presentation))
-
-                    Divider()
-
-                    Button {
-                        viewModel.killProcess(for: presentation)
-                    } label: {
-                        Label(
-                            viewModel.isKilling(presentation) ? "Killing..." : "Kill Process",
-                            systemImage: "stop.circle"
-                        )
-                    }
-                    .disabled(viewModel.isKilling(presentation))
+                Button {
+                    viewModel.open(presentation)
+                } label: {
+                    Text(presentation.menuTitle)
                 }
             }
         }
@@ -63,10 +41,4 @@ struct MenuBarContent: View {
         }
     }
 
-    private func hiddenBinding(for presentation: SitePresentation) -> Binding<Bool> {
-        Binding(
-            get: { viewModel.isHidden(presentation) },
-            set: { viewModel.setHidden($0, for: presentation) }
-        )
-    }
 }
