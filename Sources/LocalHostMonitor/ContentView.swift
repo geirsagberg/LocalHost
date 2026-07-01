@@ -84,9 +84,20 @@ private struct HeaderView: View {
             .buttonStyle(.bordered)
             .disabled(viewModel.isScanning)
             .help("Refresh")
+            .accessibilityLabel(viewModel.isScanning ? "Refreshing localhost sites" : "Refresh localhost sites")
+            .accessibilityValue(refreshAccessibilityValue)
+            .accessibilityHint("Scans listening ports for localhost sites.")
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
+    }
+
+    private var refreshAccessibilityValue: String {
+        guard let lastScanDate = viewModel.lastScanDate else {
+            return "Not yet scanned"
+        }
+
+        return "Last updated \(Self.timeFormatter.string(from: lastScanDate))"
     }
 
     private static let timeFormatter: DateFormatter = {
@@ -142,6 +153,8 @@ private struct EmptyStateView: View {
                     .buttonStyle(.bordered)
                     .disabled(viewModel.isScanning)
                     .help("Refresh")
+                    .accessibilityLabel(viewModel.isScanning ? "Refreshing localhost sites" : "Refresh localhost sites")
+                    .accessibilityHint("Scans listening ports for localhost sites.")
                 }
             }
         }
@@ -172,7 +185,7 @@ private struct SiteRow: View {
 
     var body: some View {
         HStack(spacing: 10) {
-            EmojiPickerButton(text: emojiBinding)
+            EmojiPickerButton(text: emojiBinding, siteTitle: presentation.title)
                 .frame(width: 34, height: 34)
                 .fixedSize()
                 .disabled(isKilling)
@@ -183,6 +196,9 @@ private struct SiteRow: View {
                         .font(.system(size: 14, weight: .semibold))
                         .textFieldStyle(.roundedBorder)
                         .disabled(isKilling)
+                        .accessibilityLabel("Localhost site title")
+                        .accessibilityValue(titleBinding.wrappedValue)
+                        .accessibilityHint("Edits the display title for this localhost site.")
 
                     Button {
                         viewModel.resetTitleOverride(for: presentation)
@@ -191,8 +207,10 @@ private struct SiteRow: View {
                             .frame(width: 18, height: 18)
                     }
                     .buttonStyle(.borderless)
-                    .disabled(isKilling)
-                    .help("Use inferred title")
+                    .disabled(isKilling || !canResetTitleOverride)
+                    .help(resetTitleHelpText)
+                    .accessibilityLabel("Reset custom title")
+                    .accessibilityHint(resetTitleHelpText)
                 }
 
                 HStack(alignment: .firstTextBaseline, spacing: 6) {
@@ -204,30 +222,60 @@ private struct SiteRow: View {
                     }
                     .foregroundStyle(Color(nsColor: .linkColor))
                     .help("Open \(presentation.urlText)")
+                    .accessibilityLabel("URL")
+                    .accessibilityValue(presentation.urlText)
+                    .accessibilityHint("Opens this localhost site in the default browser.")
                     .layoutPriority(1)
 
                     Button {
                         viewModel.copyURL(presentation)
                     } label: {
-                        Image(systemName: "doc.on.doc")
+                        Image(systemName: copyFeedbackText == nil ? "doc.on.doc" : "checkmark")
                             .frame(width: 18, height: 18)
                     }
                     .buttonStyle(.borderless)
                     .disabled(isKilling)
                     .help("Copy URL")
+                    .accessibilityLabel("Copy URL")
+                    .accessibilityValue(copyFeedbackText ?? presentation.urlText)
+                    .accessibilityHint("Copies \(presentation.urlText) to the clipboard.")
 
-                    MetadataBadge(text: presentation.statusText)
+                    Text(copyFeedbackText ?? "Copied")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                        .frame(width: 42, alignment: .leading)
+                        .opacity(copyFeedbackText == nil ? 0 : 1)
+                        .accessibilityHidden(true)
+                        .animation(.easeOut(duration: 0.15), value: copyFeedbackText)
+
+                    MetadataBadge(
+                        text: presentation.statusText,
+                        accessibilityLabel: "HTTP status",
+                        accessibilityValue: "\(presentation.site.httpStatusCode)"
+                    )
 
                     if presentation.isHidden {
-                        MetadataBadge(text: "Hidden")
+                        MetadataBadge(
+                            text: "Hidden",
+                            accessibilityLabel: "Default view visibility",
+                            accessibilityValue: "Hidden"
+                        )
                     }
 
                     if let processName = presentation.processName {
-                        MetadataBadge(text: processName)
+                        MetadataBadge(
+                            text: processName,
+                            accessibilityLabel: "Process name",
+                            accessibilityValue: processName
+                        )
                     }
 
                     if let pidText = presentation.pidText {
-                        MetadataBadge(text: pidText)
+                        MetadataBadge(
+                            text: pidText,
+                            accessibilityLabel: "PID",
+                            accessibilityValue: "\(presentation.site.pid ?? 0)"
+                        )
                     }
                 }
             }
@@ -244,6 +292,8 @@ private struct SiteRow: View {
                 .buttonStyle(.borderedProminent)
                 .disabled(isKilling)
                 .help("Open \(presentation.urlText)")
+                .accessibilityLabel("Open localhost site")
+                .accessibilityValue(presentation.urlText)
 
                 HStack(spacing: 4) {
                     Toggle("Hide", isOn: hiddenBinding)
@@ -292,6 +342,9 @@ private struct SiteRow: View {
             RoundedRectangle(cornerRadius: 8)
                 .stroke(Color(nsColor: .separatorColor).opacity(0.35), lineWidth: 1)
         )
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("Localhost site")
+        .accessibilityValue(presentation.accessibilitySummary)
     }
 
     private var titleBinding: Binding<String> {
@@ -319,10 +372,49 @@ private struct SiteRow: View {
         viewModel.isKilling(presentation)
     }
 
+    private var canResetTitleOverride: Bool {
+        viewModel.canResetTitleOverride(for: presentation)
+    }
+
+    private var resetTitleHelpText: String {
+        if canResetTitleOverride {
+            return "Use inferred title \(titleResetTarget)"
+        }
+
+        return "No custom title to reset"
+    }
+
+    private var titleResetTarget: String {
+        let inferredTitle = presentation.site.inferredTitle?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+
+        if let inferredTitle, !inferredTitle.isEmpty {
+            return inferredTitle
+        }
+
+        return presentation.site.fallbackTitle
+    }
+
+    private var copyFeedbackText: String? {
+        viewModel.copyFeedbackText(for: presentation)
+    }
+
 }
 
 private struct MetadataBadge: View {
     let text: String
+    let accessibilityLabel: String
+    let accessibilityValue: String
+
+    init(
+        text: String,
+        accessibilityLabel: String? = nil,
+        accessibilityValue: String? = nil
+    ) {
+        self.text = text
+        self.accessibilityLabel = accessibilityLabel ?? text
+        self.accessibilityValue = accessibilityValue ?? text
+    }
 
     var body: some View {
         Text(text)
@@ -336,11 +428,14 @@ private struct MetadataBadge: View {
                     .fill(Color(nsColor: .quaternaryLabelColor).opacity(0.22))
             )
             .fixedSize(horizontal: true, vertical: false)
+            .accessibilityLabel(accessibilityLabel)
+            .accessibilityValue(accessibilityValue)
     }
 }
 
 private struct EmojiPickerButton: View {
     @Binding var text: String
+    let siteTitle: String
     @State private var isShowingPicker = false
 
     var body: some View {
@@ -354,6 +449,9 @@ private struct EmojiPickerButton: View {
         .buttonStyle(EmojiSquareButtonStyle())
         .fixedSize()
         .help("Choose emoji")
+        .accessibilityLabel("Choose emoji for \(siteTitle)")
+        .accessibilityValue(text.isEmpty ? "No emoji" : text)
+        .accessibilityHint("Opens the emoji picker.")
         .popover(isPresented: $isShowingPicker, arrowEdge: .leading) {
             EmojiPickerPopover(
                 selectedEmoji: $text,
@@ -408,6 +506,8 @@ private struct EmojiPickerPopover: View {
                         )
                 )
                 .help(emoji)
+                .accessibilityLabel("Choose emoji")
+                .accessibilityValue(emoji)
             }
         }
         .padding(8)

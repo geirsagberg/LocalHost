@@ -25,8 +25,13 @@ final class SitePresentationTests: XCTestCase {
         XCTAssertEqual(presentation.processName, "node")
         XCTAssertEqual(presentation.pidText, "PID 123")
         XCTAssertTrue(presentation.isHidden)
+        XCTAssertTrue(presentation.hasTitleOverride)
         XCTAssertFalse(presentation.isVisibleInDefaultView)
         XCTAssertEqual(presentation.menuTitle, "🧪 Dashboard :5173")
+        XCTAssertEqual(
+            presentation.accessibilitySummary,
+            "Title Dashboard, URL http://localhost:5173, HTTP status 200, Process name node, PID 123"
+        )
     }
 
     func testPresentationFallsBackToInferredTitleAndAutomaticEmoji() throws {
@@ -45,8 +50,26 @@ final class SitePresentationTests: XCTestCase {
         XCTAssertNil(presentation.processName)
         XCTAssertNil(presentation.pidText)
         XCTAssertFalse(presentation.isHidden)
+        XCTAssertFalse(presentation.hasTitleOverride)
         XCTAssertTrue(presentation.isVisibleInDefaultView)
         XCTAssertEqual(presentation.menuTitle, "\(EmojiAssigner.emoji(for: site.preferenceKey)) Preview :3000")
+    }
+
+    func testTitleResetAvailabilityIgnoresEmptyOverrides() throws {
+        let site = try makeSite(port: 3000, statusCode: 200)
+
+        XCTAssertFalse(
+            SitePresentation(
+                site: site,
+                override: SiteOverride(title: " ")
+            ).hasTitleOverride
+        )
+        XCTAssertTrue(
+            SitePresentation(
+                site: site,
+                override: SiteOverride(title: "Dashboard")
+            ).hasTitleOverride
+        )
     }
 
     func testMenuTitleIncludesStatusForNonOKSites() throws {
