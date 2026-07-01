@@ -67,29 +67,49 @@ final class SitePresentationTests: XCTestCase {
         XCTAssertEqual(presentation.menuTitle, "Missing :4040 HTTP 404")
     }
 
-    func testVisiblePresentationsRespectDefaultViewRules() throws {
+    func testVisiblePresentationsRespectExplicitDefaultViewFilters() throws {
         let visibleSite = try makeSite(port: 3000, statusCode: 200)
         let redirectSite = try makeSite(port: 4000, statusCode: 302)
         let hiddenSite = try makeSite(port: 5173, statusCode: 200)
         let notOKSite = try makeSite(port: 8080, statusCode: 500)
-        let sites = [visibleSite, redirectSite, hiddenSite, notOKSite]
+        let hiddenNotOKSite = try makeSite(port: 9000, statusCode: 404)
+        let sites = [visibleSite, redirectSite, hiddenSite, notOKSite, hiddenNotOKSite]
         let overrides = [
-            hiddenSite.preferenceKey: SiteOverride(isHidden: true)
+            hiddenSite.preferenceKey: SiteOverride(isHidden: true),
+            hiddenNotOKSite.preferenceKey: SiteOverride(isHidden: true)
         ]
 
         let defaultView = SitePresentation.visiblePresentations(
             for: sites,
             overrides: overrides,
-            showsAllResponses: false
+            filter: DefaultViewFilter()
         )
-        let allEntries = SitePresentation.visiblePresentations(
+        let includingHidden = SitePresentation.visiblePresentations(
             for: sites,
             overrides: overrides,
-            showsAllResponses: true
+            filter: DefaultViewFilter(includesHiddenSites: true)
+        )
+        let includingNonOK = SitePresentation.visiblePresentations(
+            for: sites,
+            overrides: overrides,
+            filter: DefaultViewFilter(includesNonOKSites: true)
+        )
+        let includingHiddenAndNonOK = SitePresentation.visiblePresentations(
+            for: sites,
+            overrides: overrides,
+            filter: DefaultViewFilter(includesHiddenSites: true, includesNonOKSites: true)
         )
 
         XCTAssertEqual(defaultView.map(\.site.port), [3000, 4000])
-        XCTAssertEqual(allEntries.map(\.site.port), [3000, 4000, 5173, 8080])
+        XCTAssertEqual(includingHidden.map(\.site.port), [3000, 4000, 5173])
+        XCTAssertEqual(includingNonOK.map(\.site.port), [3000, 4000, 8080])
+        XCTAssertEqual(includingHiddenAndNonOK.map(\.site.port), [3000, 4000, 5173, 8080, 9000])
+    }
+
+    func testDefaultViewSummaryCountTextIsSelfExplanatory() {
+        XCTAssertEqual(DefaultViewSummary(shownCount: 0, totalCount: 0).countText, "0 shown")
+        XCTAssertEqual(DefaultViewSummary(shownCount: 29, totalCount: 29).countText, "29 shown")
+        XCTAssertEqual(DefaultViewSummary(shownCount: 5, totalCount: 29).countText, "5 of 29 shown")
     }
 
     func testTitleOverrideValueDropsEquivalentTitles() throws {

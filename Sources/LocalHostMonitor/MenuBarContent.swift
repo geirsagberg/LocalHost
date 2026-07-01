@@ -17,13 +17,16 @@ struct MenuBarContent: View {
         }
         .disabled(viewModel.isScanning)
 
-        Toggle("View all entries", isOn: $viewModel.showsAllResponses)
+        Toggle("Show hidden sites", isOn: $viewModel.includesHiddenSites)
+            .disabled(viewModel.sites.isEmpty)
+
+        Toggle("Show non-OK sites", isOn: $viewModel.includesNonOKSites)
             .disabled(viewModel.sites.isEmpty)
 
         Divider()
 
         if viewModel.visibleSitePresentations.isEmpty {
-            Text("No localhost sites")
+            Text(viewModel.emptyStateTitle)
         } else {
             ForEach(viewModel.visibleSitePresentations) { presentation in
                 Button {

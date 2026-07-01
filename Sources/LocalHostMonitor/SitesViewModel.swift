@@ -5,7 +5,8 @@ import LocalHostMonitorCore
 @MainActor
 final class SitesViewModel: ObservableObject {
     @Published private(set) var sites: [LocalhostSite] = []
-    @Published var showsAllResponses = false
+    @Published var includesHiddenSites = false
+    @Published var includesNonOKSites = false
     @Published var alertMessage: UserAlertMessage?
     @Published private(set) var overrides: [String: SiteOverride] = [:] {
         didSet {
@@ -61,7 +62,7 @@ final class SitesViewModel: ObservableObject {
         SitePresentation.visiblePresentations(
             for: sites,
             overrides: overrides,
-            showsAllResponses: showsAllResponses
+            filter: defaultViewFilter
         )
     }
 
@@ -70,11 +71,76 @@ final class SitesViewModel: ObservableObject {
     }
 
     var siteCountText: String {
-        if filteredSiteCount > 0 {
-            return "\(visibleSitePresentations.count)/\(sites.count)"
+        DefaultViewSummary(
+            shownCount: visibleSitePresentations.count,
+            totalCount: sites.count
+        ).countText
+    }
+
+    var emptyStateTitle: String {
+        if isLoadingInitialSites {
+            return "Loading localhost sites"
         }
 
-        return "\(sites.count)"
+        if sites.isEmpty {
+            return "No localhost sites"
+        }
+
+        return "No localhost sites visible"
+    }
+
+    var emptyStateMessage: String? {
+        guard !isLoadingInitialSites, !sites.isEmpty else {
+            return nil
+        }
+
+        if !includesHiddenSites && !includesNonOKSites {
+            return "The default view is hiding explicitly hidden sites and non-OK localhost sites."
+        }
+
+        if !includesHiddenSites {
+            return "The default view is hiding explicitly hidden localhost sites."
+        }
+
+        if !includesNonOKSites {
+            return "The default view is hiding non-OK localhost sites."
+        }
+
+        return nil
+    }
+
+    var emptyStateRecoveryActions: [DefaultViewRecoveryAction] {
+        guard !isLoadingInitialSites, !sites.isEmpty else {
+            return []
+        }
+
+        let presentations = allSitePresentations
+        var actions: [DefaultViewRecoveryAction] = []
+
+        if !includesHiddenSites, presentations.contains(where: \.isHidden) {
+            actions.append(.showHidden)
+        }
+
+        if !includesNonOKSites, presentations.contains(where: { !$0.site.isOK }) {
+            actions.append(.showNonOK)
+        }
+
+        return actions
+    }
+
+    var isLoadingInitialSites: Bool {
+        isScanning && lastScanDate == nil
+    }
+
+    private var allSitePresentations: [SitePresentation] {
+        SitePresentation.presentations(for: sites, overrides: overrides)
+    }
+
+    private var defaultViewFilter: DefaultViewFilter {
+        DefaultViewFilter(
+            includesHiddenSites: includesHiddenSites,
+            includesNonOKSites: includesNonOKSites
+        )
     }
 
     func refresh() async {
@@ -277,5 +343,23 @@ struct NativeProcessTerminationConfirmer: ProcessTerminationConfirming {
         facts.append("This will send TERM to the process listening on this port.")
 
         return facts.joined(separator: "\n")
+    }
+}
+
+enum DefaultViewRecoveryAction: String, Identifiable {
+    case showHidden
+    case showNonOK
+
+    var id: String {
+        rawValue
+    }
+
+    var title: String {
+        switch self {
+        case .showHidden:
+            return "Show hidden"
+        case .showNonOK:
+            return "Show non-OK"
+        }
     }
 }
