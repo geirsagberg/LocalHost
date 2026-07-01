@@ -192,7 +192,7 @@ The elevation philosophy is tonal layering, no shadows. Depth comes from platfor
 
 ### Do:
 - **Do** use native macOS semantic colors for background, text, separators, links, and controls.
-- **Do** keep the default view calm and useful, with deeper detail behind the "View all" toggle.
+- **Do** keep the default view calm and useful, with deeper detail behind explicit hidden-site and non-OK controls.
 - **Do** keep title, emoji, URL, status, process name, PID, and hidden state as distinct visual facts.
 - **Do** use monospaced digits for counts, timestamps, HTTP status, and PID labels.
 - **Do** keep destructive actions explicit: the label must say "Kill Process" and use the destructive red treatment.

@@ -49,15 +49,6 @@ public struct SitePresentation: Identifiable, Equatable, Sendable {
         }
     }
 
-    public static func visiblePresentations(
-        for sites: [LocalhostSite],
-        overrides: [String: SiteOverride],
-        showsAllResponses: Bool
-    ) -> [SitePresentation] {
-        let presentations = presentations(for: sites, overrides: overrides)
-        return showsAllResponses ? presentations : presentations.filter(\.isVisibleInDefaultView)
-    }
-
     public static func titleOverrideValue(for site: LocalhostSite, rawTitle: String) -> String? {
         let trimmedTitle = rawTitle.trimmedForPresentation
         let inferredTitle = site.inferredTitle?.trimmedForPresentation ?? ""
@@ -105,6 +96,59 @@ public struct SitePresentation: Identifiable, Equatable, Sendable {
             let trimmedValue = value.trimmedForPresentation
             return trimmedValue.first.map { String($0) }
         }
+    }
+}
+
+public struct DefaultViewFilter: Equatable, Sendable {
+    public var includesHiddenSites: Bool
+    public var includesNonOKSites: Bool
+
+    public init(
+        includesHiddenSites: Bool = false,
+        includesNonOKSites: Bool = false
+    ) {
+        self.includesHiddenSites = includesHiddenSites
+        self.includesNonOKSites = includesNonOKSites
+    }
+
+    public func includes(_ presentation: SitePresentation) -> Bool {
+        let passesHiddenFilter = includesHiddenSites || !presentation.isHidden
+        let passesStatusFilter = includesNonOKSites || presentation.site.isOK
+
+        return passesHiddenFilter && passesStatusFilter
+    }
+}
+
+public struct DefaultViewSummary: Equatable, Sendable {
+    public let shownCount: Int
+    public let totalCount: Int
+
+    public init(shownCount: Int, totalCount: Int) {
+        self.shownCount = shownCount
+        self.totalCount = totalCount
+    }
+
+    public var countText: String {
+        if totalCount == 0 {
+            return "0 shown"
+        }
+
+        if shownCount == totalCount {
+            return "\(totalCount) shown"
+        }
+
+        return "\(shownCount) of \(totalCount) shown"
+    }
+}
+
+public extension SitePresentation {
+    static func visiblePresentations(
+        for sites: [LocalhostSite],
+        overrides: [String: SiteOverride],
+        filter: DefaultViewFilter
+    ) -> [SitePresentation] {
+        presentations(for: sites, overrides: overrides)
+            .filter { filter.includes($0) }
     }
 }
 
