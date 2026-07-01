@@ -9,8 +9,10 @@ public struct SitePresentation: Identifiable, Equatable, Sendable {
     public let processName: String?
     public let pidText: String?
     public let isHidden: Bool
+    public let hasTitleOverride: Bool
     public let isVisibleInDefaultView: Bool
     public let menuTitle: String
+    public let accessibilitySummary: String
 
     public var id: LocalhostSite.ID {
         site.id
@@ -22,15 +24,18 @@ public struct SitePresentation: Identifiable, Equatable, Sendable {
         let title = Self.resolvedTitle(for: site, override: override)
         let emoji = Self.resolvedEmoji(for: site, override: override)
         let isHidden = override?.isHidden ?? false
+        let hasTitleOverride = override?.title?.trimmedForPresentation.nilIfEmpty != nil
+        let processName = site.processName?.trimmedForPresentation.nilIfEmpty
         let statusSuffix = site.isOK ? "" : " HTTP \(site.httpStatusCode)"
 
         self.title = title
         self.emoji = emoji
         self.urlText = site.displayURLString
         self.statusText = "HTTP \(site.httpStatusCode)"
-        self.processName = site.processName?.trimmedForPresentation.nilIfEmpty
+        self.processName = processName
         self.pidText = site.pid.map { "PID \($0)" }
         self.isHidden = isHidden
+        self.hasTitleOverride = hasTitleOverride
         self.isVisibleInDefaultView = site.isOK && !isHidden
 
         if let emoji, !emoji.isEmpty {
@@ -38,6 +43,14 @@ public struct SitePresentation: Identifiable, Equatable, Sendable {
         } else {
             self.menuTitle = "\(title) :\(site.port)\(statusSuffix)"
         }
+
+        self.accessibilitySummary = Self.accessibilitySummary(
+            title: title,
+            urlText: site.displayURLString,
+            statusCode: site.httpStatusCode,
+            processName: processName,
+            pid: site.pid
+        )
     }
 
     public static func presentations(
@@ -96,6 +109,30 @@ public struct SitePresentation: Identifiable, Equatable, Sendable {
             let trimmedValue = value.trimmedForPresentation
             return trimmedValue.first.map { String($0) }
         }
+    }
+
+    private static func accessibilitySummary(
+        title: String,
+        urlText: String,
+        statusCode: Int,
+        processName: String?,
+        pid: Int?
+    ) -> String {
+        var facts = [
+            "Title \(title)",
+            "URL \(urlText)",
+            "HTTP status \(statusCode)"
+        ]
+
+        if let processName {
+            facts.append("Process name \(processName)")
+        }
+
+        if let pid {
+            facts.append("PID \(pid)")
+        }
+
+        return facts.joined(separator: ", ")
     }
 }
 
