@@ -536,9 +536,8 @@ private struct ClickAwayDefocusModifier: ViewModifier {
                     return
                 }
 
-                monitor = NSEvent.addLocalMonitorForEvents(matching: [.leftMouseDown]) { event in
-                    clearTextFocusIfNeeded(for: event)
-                    return event
+                monitor = NSEvent.addLocalMonitorForEvents(matching: [.leftMouseDown, .keyDown]) { event in
+                    handle(event)
                 }
             }
             .onDisappear {
@@ -549,6 +548,18 @@ private struct ClickAwayDefocusModifier: ViewModifier {
             }
     }
 
+    private func handle(_ event: NSEvent) -> NSEvent? {
+        switch event.type {
+        case .leftMouseDown:
+            clearTextFocusIfNeeded(for: event)
+            return event
+        case .keyDown:
+            return clearTextFocusIfNeeded(forEscape: event)
+        default:
+            return event
+        }
+    }
+
     private func clearTextFocusIfNeeded(for event: NSEvent) {
         guard let window = event.window,
               let contentView = window.contentView else {
@@ -556,34 +567,31 @@ private struct ClickAwayDefocusModifier: ViewModifier {
         }
 
         let location = contentView.convert(event.locationInWindow, from: nil)
-        if contentView.hitTest(location)?.isTextInputView == true {
+        guard ClickAwayDefocusBehavior.shouldDefocusTextFields(
+            whenClicking: contentView.hitTest(location)
+        ) else {
             return
         }
 
-        if window.firstResponder is NSTextView || window.firstResponder is NSTextField {
-            window.makeFirstResponder(nil)
+        ClickAwayDefocusBehavior.defocusTextFields(in: window)
+    }
+
+    private func clearTextFocusIfNeeded(forEscape event: NSEvent) -> NSEvent? {
+        guard let window = event.window,
+              ClickAwayDefocusBehavior.shouldDefocusTextFields(
+                whenPressing: event,
+                in: window
+              ) else {
+            return event
         }
+
+        ClickAwayDefocusBehavior.defocusTextFields(in: window)
+        return nil
     }
 }
 
 private extension View {
     func defocusesTextFieldsOnClickAway() -> some View {
         modifier(ClickAwayDefocusModifier())
-    }
-}
-
-private extension NSView {
-    var isTextInputView: Bool {
-        var view: NSView? = self
-
-        while let currentView = view {
-            if currentView is NSTextField || currentView is NSTextView {
-                return true
-            }
-
-            view = currentView.superview
-        }
-
-        return false
     }
 }
