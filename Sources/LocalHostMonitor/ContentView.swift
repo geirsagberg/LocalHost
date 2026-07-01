@@ -84,6 +84,9 @@ private struct HeaderView: View {
             .buttonStyle(.bordered)
             .disabled(viewModel.isScanning)
             .help("Refresh")
+            .accessibilityLabel("Refresh localhost sites")
+            .accessibilityValue(viewModel.isScanning ? "Refreshing" : "Idle")
+            .accessibilityHint("Scans listening ports again")
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
@@ -142,6 +145,9 @@ private struct EmptyStateView: View {
                     .buttonStyle(.bordered)
                     .disabled(viewModel.isScanning)
                     .help("Refresh")
+                    .accessibilityLabel("Refresh localhost sites")
+                    .accessibilityValue(viewModel.isScanning ? "Refreshing" : "Idle")
+                    .accessibilityHint("Scans listening ports again")
                 }
             }
         }
@@ -172,7 +178,11 @@ private struct SiteRow: View {
 
     var body: some View {
         HStack(spacing: 10) {
-            EmojiPickerButton(text: emojiBinding)
+            EmojiPickerButton(
+                text: emojiBinding,
+                title: presentation.title,
+                urlText: presentation.urlText
+            )
                 .frame(width: 34, height: 34)
                 .fixedSize()
                 .disabled(isKilling)
@@ -183,6 +193,9 @@ private struct SiteRow: View {
                         .font(.system(size: 14, weight: .semibold))
                         .textFieldStyle(.roundedBorder)
                         .disabled(isKilling)
+                        .accessibilityLabel("Site title")
+                        .accessibilityValue(viewModel.title(for: presentation))
+                        .accessibilityHint("Edits the display title for \(presentation.urlText)")
 
                     Button {
                         viewModel.resetTitleOverride(for: presentation)
@@ -191,8 +204,15 @@ private struct SiteRow: View {
                             .frame(width: 18, height: 18)
                     }
                     .buttonStyle(.borderless)
-                    .disabled(isKilling)
-                    .help("Use inferred title")
+                    .disabled(isKilling || !canResetTitleOverride)
+                    .help(canResetTitleOverride ? "Use inferred title" : "No title override to reset")
+                    .accessibilityLabel("Reset title")
+                    .accessibilityValue(canResetTitleOverride ? "Custom title" : "Inferred title")
+                    .accessibilityHint(
+                        canResetTitleOverride
+                            ? "Uses the inferred title for \(presentation.urlText)"
+                            : "Unavailable because this localhost site is already using its inferred title"
+                    )
                 }
 
                 HStack(alignment: .firstTextBaseline, spacing: 6) {
@@ -205,29 +225,48 @@ private struct SiteRow: View {
                     .foregroundStyle(Color(nsColor: .linkColor))
                     .help("Open \(presentation.urlText)")
                     .layoutPriority(1)
+                    .accessibilityLabel("URL")
+                    .accessibilityValue(presentation.urlText)
+                    .accessibilityHint("Opens this localhost site in the browser")
 
                     Button {
                         viewModel.copyURL(presentation)
                     } label: {
-                        Image(systemName: "doc.on.doc")
+                        Image(systemName: isURLCopyFeedbackVisible ? "checkmark.circle.fill" : "doc.on.doc")
                             .frame(width: 18, height: 18)
                     }
                     .buttonStyle(.borderless)
                     .disabled(isKilling)
-                    .help("Copy URL")
+                    .help(isURLCopyFeedbackVisible ? "Copied" : "Copy URL")
+                    .accessibilityLabel("Copy URL")
+                    .accessibilityValue(isURLCopyFeedbackVisible ? "Copied" : presentation.urlText)
+                    .accessibilityHint("Copies \(presentation.urlText) to the clipboard")
 
-                    MetadataBadge(text: presentation.statusText)
+                    MetadataBadge(
+                        text: presentation.statusText,
+                        accessibilityLabel: "Status \(presentation.statusText)"
+                    )
 
                     if presentation.isHidden {
-                        MetadataBadge(text: "Hidden")
+                        MetadataBadge(
+                            text: "Hidden",
+                            accessibilityLabel: "Hidden from the default view"
+                        )
                     }
 
                     if let processName = presentation.processName {
-                        MetadataBadge(text: processName)
+                        MetadataBadge(
+                            text: processName,
+                            accessibilityLabel: "Process \(processName)"
+                        )
                     }
 
-                    if let pidText = presentation.pidText {
-                        MetadataBadge(text: pidText)
+                    if let pid = presentation.site.pid,
+                       let pidText = presentation.pidText {
+                        MetadataBadge(
+                            text: pidText,
+                            accessibilityLabel: "Process ID \(pid)"
+                        )
                     }
                 }
             }
@@ -244,6 +283,7 @@ private struct SiteRow: View {
                 .buttonStyle(.borderedProminent)
                 .disabled(isKilling)
                 .help("Open \(presentation.urlText)")
+                .accessibilityHint("Opens \(presentation.urlText) in the browser")
 
                 HStack(spacing: 4) {
                     Toggle("Hide", isOn: hiddenBinding)
@@ -252,6 +292,9 @@ private struct SiteRow: View {
                         .fixedSize()
                         .disabled(isKilling)
                         .help("Show when Show hidden is enabled")
+                        .accessibilityLabel("Hide localhost site")
+                        .accessibilityValue(viewModel.isHidden(presentation) ? "Hidden" : "Visible")
+                        .accessibilityHint("Controls whether this localhost site appears in the default view")
 
                     if isKilling {
                         HStack(spacing: 6) {
@@ -265,6 +308,7 @@ private struct SiteRow: View {
                         .frame(width: 96, height: 24)
                         .contentShape(Rectangle())
                         .help("Killing process")
+                        .accessibilityLabel("Killing process")
                     } else {
                         Button {
                             Task {
@@ -278,6 +322,7 @@ private struct SiteRow: View {
                         .controlSize(.small)
                         .foregroundStyle(.red)
                         .help("Kill process")
+                        .accessibilityHint("Asks for confirmation before terminating the process on port \(presentation.site.port)")
                     }
                 }
             }
@@ -292,6 +337,9 @@ private struct SiteRow: View {
             RoundedRectangle(cornerRadius: 8)
                 .stroke(Color(nsColor: .separatorColor).opacity(0.35), lineWidth: 1)
         )
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel(rowAccessibilityLabel)
+        .accessibilityValue(rowAccessibilityValue)
     }
 
     private var titleBinding: Binding<String> {
@@ -319,10 +367,38 @@ private struct SiteRow: View {
         viewModel.isKilling(presentation)
     }
 
+    private var canResetTitleOverride: Bool {
+        viewModel.canResetTitleOverride(for: presentation)
+    }
+
+    private var isURLCopyFeedbackVisible: Bool {
+        viewModel.isURLCopyFeedbackVisible(for: presentation)
+    }
+
+    private var rowAccessibilityLabel: String {
+        "\(presentation.title), \(presentation.urlText)"
+    }
+
+    private var rowAccessibilityValue: String {
+        var facts = [presentation.statusText]
+
+        if let processName = presentation.processName {
+            facts.append("process \(processName)")
+        }
+
+        if let pidText = presentation.pidText {
+            facts.append(pidText)
+        }
+
+        facts.append(presentation.isHidden ? "hidden from the default view" : "visible in the default view")
+        return facts.joined(separator: ", ")
+    }
+
 }
 
 private struct MetadataBadge: View {
     let text: String
+    let accessibilityLabel: String
 
     var body: some View {
         Text(text)
@@ -336,11 +412,14 @@ private struct MetadataBadge: View {
                     .fill(Color(nsColor: .quaternaryLabelColor).opacity(0.22))
             )
             .fixedSize(horizontal: true, vertical: false)
+            .accessibilityLabel(accessibilityLabel)
     }
 }
 
 private struct EmojiPickerButton: View {
     @Binding var text: String
+    let title: String
+    let urlText: String
     @State private var isShowingPicker = false
 
     var body: some View {
@@ -354,6 +433,9 @@ private struct EmojiPickerButton: View {
         .buttonStyle(EmojiSquareButtonStyle())
         .fixedSize()
         .help("Choose emoji")
+        .accessibilityLabel("Choose emoji")
+        .accessibilityValue(text.isEmpty ? "Automatic emoji for \(title)" : text)
+        .accessibilityHint("Opens emoji choices for \(urlText)")
         .popover(isPresented: $isShowingPicker, arrowEdge: .leading) {
             EmojiPickerPopover(
                 selectedEmoji: $text,
@@ -408,6 +490,8 @@ private struct EmojiPickerPopover: View {
                         )
                 )
                 .help(emoji)
+                .accessibilityLabel("Use emoji \(emoji)")
+                .accessibilityHint(emoji == selectedEmoji ? "Selected" : "Selects this emoji")
             }
         }
         .padding(8)

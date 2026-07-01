@@ -9,6 +9,7 @@ public struct SitePresentation: Identifiable, Equatable, Sendable {
     public let processName: String?
     public let pidText: String?
     public let isHidden: Bool
+    public let hasTitleOverride: Bool
     public let isVisibleInDefaultView: Bool
     public let menuTitle: String
 
@@ -22,6 +23,7 @@ public struct SitePresentation: Identifiable, Equatable, Sendable {
         let title = Self.resolvedTitle(for: site, override: override)
         let emoji = Self.resolvedEmoji(for: site, override: override)
         let isHidden = override?.isHidden ?? false
+        let hasTitleOverride = override?.title?.trimmedForPresentation.isEmpty == false
         let statusSuffix = site.isOK ? "" : " HTTP \(site.httpStatusCode)"
 
         self.title = title
@@ -31,6 +33,7 @@ public struct SitePresentation: Identifiable, Equatable, Sendable {
         self.processName = site.processName?.trimmedForPresentation.nilIfEmpty
         self.pidText = site.pid.map { "PID \($0)" }
         self.isHidden = isHidden
+        self.hasTitleOverride = hasTitleOverride
         self.isVisibleInDefaultView = site.isOK && !isHidden
 
         if let emoji, !emoji.isEmpty {

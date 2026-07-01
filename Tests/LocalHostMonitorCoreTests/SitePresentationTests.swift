@@ -25,6 +25,7 @@ final class SitePresentationTests: XCTestCase {
         XCTAssertEqual(presentation.processName, "node")
         XCTAssertEqual(presentation.pidText, "PID 123")
         XCTAssertTrue(presentation.isHidden)
+        XCTAssertTrue(presentation.hasTitleOverride)
         XCTAssertFalse(presentation.isVisibleInDefaultView)
         XCTAssertEqual(presentation.menuTitle, "🧪 Dashboard :5173")
     }
@@ -45,6 +46,7 @@ final class SitePresentationTests: XCTestCase {
         XCTAssertNil(presentation.processName)
         XCTAssertNil(presentation.pidText)
         XCTAssertFalse(presentation.isHidden)
+        XCTAssertFalse(presentation.hasTitleOverride)
         XCTAssertTrue(presentation.isVisibleInDefaultView)
         XCTAssertEqual(presentation.menuTitle, "\(EmojiAssigner.emoji(for: site.preferenceKey)) Preview :3000")
     }

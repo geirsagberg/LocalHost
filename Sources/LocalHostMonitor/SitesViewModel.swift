@@ -16,13 +16,16 @@ final class SitesViewModel: ObservableObject {
     @Published private(set) var isScanning = false
     @Published private(set) var lastScanDate: Date?
     @Published private(set) var killingPorts: Set<Int> = []
+    @Published private(set) var copiedSiteID: LocalhostSite.ID?
 
     private let scanner: LocalhostScanning
     private let processTerminator: ProcessTerminating
     private let processTerminationConfirmer: ProcessTerminationConfirming
     private let preferencesStore: PreferencesStore
     private let postTerminationRefreshDelayNanoseconds: UInt64
+    private let copyFeedbackDurationNanoseconds: UInt64
     private var refreshLoop: Task<Void, Never>?
+    private var copyFeedbackResetTask: Task<Void, Never>?
     private var confirmingPorts: Set<Int> = []
 
     init(
@@ -31,6 +34,7 @@ final class SitesViewModel: ObservableObject {
         processTerminationConfirmer: ProcessTerminationConfirming = NativeProcessTerminationConfirmer(),
         preferencesStore: PreferencesStore = PreferencesStore(),
         postTerminationRefreshDelayNanoseconds: UInt64 = 350_000_000,
+        copyFeedbackDurationNanoseconds: UInt64 = 1_500_000_000,
         startsRefreshLoop: Bool = true
     ) {
         self.scanner = scanner
@@ -38,6 +42,7 @@ final class SitesViewModel: ObservableObject {
         self.processTerminationConfirmer = processTerminationConfirmer
         self.preferencesStore = preferencesStore
         self.postTerminationRefreshDelayNanoseconds = postTerminationRefreshDelayNanoseconds
+        self.copyFeedbackDurationNanoseconds = copyFeedbackDurationNanoseconds
         self.overrides = preferencesStore.load()
 
         guard startsRefreshLoop else {
@@ -56,6 +61,7 @@ final class SitesViewModel: ObservableObject {
 
     deinit {
         refreshLoop?.cancel()
+        copyFeedbackResetTask?.cancel()
     }
 
     var visibleSitePresentations: [SitePresentation] {
@@ -180,6 +186,10 @@ final class SitesViewModel: ObservableObject {
         }
     }
 
+    func canResetTitleOverride(for presentation: SitePresentation) -> Bool {
+        currentPresentation(for: presentation).hasTitleOverride
+    }
+
     func emojiFieldText(for presentation: SitePresentation) -> String {
         currentPresentation(for: presentation).emoji ?? ""
     }
@@ -207,6 +217,30 @@ final class SitesViewModel: ObservableObject {
     func copyURL(_ presentation: SitePresentation) {
         NSPasteboard.general.clearContents()
         NSPasteboard.general.setString(presentation.urlText, forType: .string)
+
+        let siteID = presentation.id
+        let feedbackDuration = copyFeedbackDurationNanoseconds
+        copyFeedbackResetTask?.cancel()
+        copiedSiteID = siteID
+        copyFeedbackResetTask = Task { [weak self] in
+            try? await Task.sleep(nanoseconds: feedbackDuration)
+
+            guard !Task.isCancelled else {
+                return
+            }
+
+            await MainActor.run {
+                guard self?.copiedSiteID == siteID else {
+                    return
+                }
+
+                self?.copiedSiteID = nil
+            }
+        }
+    }
+
+    func isURLCopyFeedbackVisible(for presentation: SitePresentation) -> Bool {
+        copiedSiteID == presentation.id
     }
 
     func isKilling(_ presentation: SitePresentation) -> Bool {
