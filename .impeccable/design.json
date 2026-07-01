@@ -1,0 +1,299 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-07-01T00:00:00+02:00",
+  "title": "Design System: LocalHost Monitor",
+  "extensions": {
+    "colorMeta": {
+      "window-background": {
+        "role": "neutral",
+        "displayName": "Window Background",
+        "canonical": "Color(nsColor: .windowBackgroundColor)",
+        "tonalRamp": [
+          "#1C1C1E",
+          "#2C2C2E",
+          "#3A3A3C",
+          "#636366",
+          "#8E8E93",
+          "#C7C7CC",
+          "#E5E5EA",
+          "#F5F5F5"
+        ]
+      },
+      "control-background": {
+        "role": "neutral",
+        "displayName": "Control Background",
+        "canonical": "Color(nsColor: .controlBackgroundColor)",
+        "tonalRamp": [
+          "#1C1C1E",
+          "#2C2C2E",
+          "#48484A",
+          "#636366",
+          "#AEAEB2",
+          "#D1D1D6",
+          "#F2F2F7",
+          "#FFFFFF"
+        ]
+      },
+      "primary-text": {
+        "role": "neutral",
+        "displayName": "Primary Text",
+        "canonical": ".foregroundStyle(.primary)",
+        "tonalRamp": [
+          "#000000",
+          "#1D1D1F",
+          "#3A3A3C",
+          "#636366",
+          "#8E8E93",
+          "#AEAEB2",
+          "#D1D1D6",
+          "#F5F5F7"
+        ]
+      },
+      "secondary-text": {
+        "role": "neutral",
+        "displayName": "Secondary Text",
+        "canonical": ".foregroundStyle(.secondary)",
+        "tonalRamp": [
+          "#1D1D1F",
+          "#3A3A3C",
+          "#636366",
+          "#6E6E73",
+          "#8E8E93",
+          "#AEAEB2",
+          "#C7C7CC",
+          "#E5E5EA"
+        ]
+      },
+      "separator": {
+        "role": "neutral",
+        "displayName": "Separator",
+        "canonical": "Color(nsColor: .separatorColor)",
+        "tonalRamp": [
+          "#2C2C2E",
+          "#3A3A3C",
+          "#636366",
+          "#8E8E93",
+          "#AEAEB2",
+          "#C7C7CC",
+          "#D2D2D7",
+          "#E5E5EA"
+        ]
+      },
+      "link": {
+        "role": "secondary",
+        "displayName": "System Link Blue",
+        "canonical": "Color(nsColor: .linkColor)",
+        "tonalRamp": [
+          "#001A33",
+          "#003D7A",
+          "#0057B8",
+          "#0066CC",
+          "#0A84FF",
+          "#64D2FF",
+          "#B9E7FF",
+          "#EAF7FF"
+        ]
+      },
+      "accent": {
+        "role": "primary",
+        "displayName": "System Accent Blue",
+        "canonical": "Color.accentColor",
+        "tonalRamp": [
+          "#001A33",
+          "#003D7A",
+          "#0057B8",
+          "#0066CC",
+          "#0A84FF",
+          "#64D2FF",
+          "#B9E7FF",
+          "#EAF7FF"
+        ]
+      },
+      "destructive": {
+        "role": "tertiary",
+        "displayName": "System Destructive Red",
+        "canonical": ".foregroundStyle(.red)",
+        "tonalRamp": [
+          "#330005",
+          "#66000A",
+          "#A00010",
+          "#D70015",
+          "#FF453A",
+          "#FF8A80",
+          "#FFDAD6",
+          "#FFF1F0"
+        ]
+      },
+      "badge-fill": {
+        "role": "neutral",
+        "displayName": "Badge Fill",
+        "canonical": "Color(nsColor: .quaternaryLabelColor).opacity(0.22)",
+        "tonalRamp": [
+          "#1C1C1E",
+          "#2C2C2E",
+          "#48484A",
+          "#636366",
+          "#AEAEB2",
+          "#D1D1D6",
+          "#E8E8ED",
+          "#F5F5F7"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Header Title",
+        "purpose": "Window title only."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Empty-state title and compact emphasis."
+      },
+      "title": {
+        "displayName": "Editable Site Title",
+        "purpose": "The editable title field in each site row."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Native controls, menu items, and standard labels."
+      },
+      "label": {
+        "displayName": "Metadata Label",
+        "purpose": "URLs, status badges, timestamps, process names, and PIDs."
+      }
+    },
+    "shadows": [],
+    "motion": [
+      {
+        "name": "native-state-only",
+        "value": "platform default",
+        "purpose": "State feedback comes from native macOS controls; no decorative motion is defined."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "minimum-window",
+        "value": "640px x 420px"
+      },
+      {
+        "name": "default-window",
+        "value": "760px x 500px"
+      }
+    ],
+    "narrative": {
+      "northStar": "The Local Console",
+      "overview": "LocalHost Monitor should feel like the small native console a developer leaves open beside their editor: quiet, sharp, and instantly readable. The design system is restrained because the task is practical. It favors native macOS controls, system colors, compact rhythm, and clear action hierarchy over brand theatrics.\n\nThe system is not trying to become a monitoring dashboard. It is a focused localhost-site utility: the window names what is running, keeps site identity separate from status and process facts, and makes each action obvious without making the interface loud.",
+      "keyCharacteristics": [
+        "Native macOS materials and controls first.",
+        "Restrained density with enough spacing to scan rows quickly.",
+        "One accent for primary action and selection state.",
+        "Metadata remains compact, separate, and factual.",
+        "Destructive actions stay visible, precise, and clearly labeled."
+      ],
+      "rules": [
+        {
+          "name": "The Platform Color Rule",
+          "body": "Use semantic macOS colors in SwiftUI, not fixed brand hex values, for window, control, separator, text, link, and accent behavior.",
+          "section": "colors"
+        },
+        {
+          "name": "The One Accent Rule",
+          "body": "Blue appears only for links, primary action, focus, and selection. It is not decoration.",
+          "section": "colors"
+        },
+        {
+          "name": "The Native Scale Rule",
+          "body": "Use fixed platform text styles and small explicit sizes. Do not introduce fluid headings, decorative type, tracked uppercase labels, or marketing-page hierarchy.",
+          "section": "typography"
+        },
+        {
+          "name": "The No Shadow Rule",
+          "body": "Do not add decorative drop shadows to rows, buttons, badges, popovers, or the window content. Native controls and tonal surfaces provide the hierarchy.",
+          "section": "elevation"
+        }
+      ],
+      "dos": [
+        "Do use native macOS semantic colors for background, text, separators, links, and controls.",
+        "Do keep the default view calm and useful, with deeper detail behind the View all toggle.",
+        "Do keep title, emoji, URL, status, process name, PID, and hidden state as distinct visual facts.",
+        "Do use monospaced digits for counts, timestamps, HTTP status, and PID labels.",
+        "Do keep destructive actions explicit: the label must say Kill Process and use the destructive red treatment.",
+        "Do preserve WCAG AA contrast through system colors and avoid color-only status cues."
+      ],
+      "donts": [
+        "Don't use marketing-site gloss, decorative dashboards, loud gradients, novelty controls, or terminal-cosplay styling.",
+        "Don't use generic server-monitoring language when the app is specifically about localhost sites and site preferences.",
+        "Don't add card shadows, glassmorphism, decorative grid backgrounds, gradient text, side-stripe borders, or oversized rounded containers.",
+        "Don't collapse site facts into one overloaded subtitle.",
+        "Don't make process termination feel casual, playful, or hidden behind an ambiguous icon.",
+        "Don't replace standard macOS controls with custom controls for flavor."
+      ]
+    }
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The prominent row action used for Open Website.",
+      "html": "<button class=\"ds-btn-primary\">Open Website</button>",
+      "css": ".ds-btn-primary { background: #0A84FF; color: #FFFFFF; border: none; border-radius: 8px; padding: 6px 12px; font: 600 13px/1.25 -apple-system, BlinkMacSystemFont, system-ui, sans-serif; min-width: 120px; transition: filter 160ms ease-out; } .ds-btn-primary:hover { filter: brightness(0.96); } .ds-btn-primary:focus-visible { outline: 3px solid rgba(10,132,255,0.35); outline-offset: 2px; } .ds-btn-primary:active { filter: brightness(0.9); }"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Standard bordered action used for refresh and process controls.",
+      "html": "<button class=\"ds-btn-secondary\">Refresh</button>",
+      "css": ".ds-btn-secondary { background: #FFFFFF; color: #1D1D1F; border: 1px solid #D2D2D7; border-radius: 8px; padding: 5px 10px; font: 400 13px/1.25 -apple-system, BlinkMacSystemFont, system-ui, sans-serif; transition: background-color 160ms ease-out, border-color 160ms ease-out; } .ds-btn-secondary:hover { background: #F5F5F5; border-color: #C7C7CC; } .ds-btn-secondary:focus-visible { outline: 3px solid rgba(10,132,255,0.35); outline-offset: 2px; } .ds-btn-secondary:active { background: #E8E8ED; }"
+    },
+    {
+      "name": "Destructive Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Explicit process termination action.",
+      "html": "<button class=\"ds-btn-danger\">Kill Process</button>",
+      "css": ".ds-btn-danger { background: #FFFFFF; color: #D70015; border: 1px solid #D2D2D7; border-radius: 8px; padding: 4px 8px; width: 96px; font: 400 12px/1.2 -apple-system, BlinkMacSystemFont, system-ui, sans-serif; transition: background-color 160ms ease-out, border-color 160ms ease-out; } .ds-btn-danger:hover { background: #FFF1F0; border-color: #FF8A80; } .ds-btn-danger:focus-visible { outline: 3px solid rgba(215,0,21,0.25); outline-offset: 2px; } .ds-btn-danger:active { background: #FFDAD6; }"
+    },
+    {
+      "name": "Metadata Badge",
+      "kind": "chip",
+      "refersTo": "metadata-badge",
+      "description": "Compact non-interactive factual metadata for status, process, PID, and hidden state.",
+      "html": "<span class=\"ds-badge\">200 OK</span>",
+      "css": ".ds-badge { display: inline-flex; align-items: center; max-width: 160px; padding: 2px 6px; border-radius: 999px; background: #E8E8ED; color: #6E6E73; font: 400 11px/1.2 ui-monospace, SFMono-Regular, Menlo, monospace; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }"
+    },
+    {
+      "name": "Site Row",
+      "kind": "card",
+      "refersTo": "site-row",
+      "description": "The tonal row container that groups a localhost site's identity, URL, metadata, and actions.",
+      "html": "<div class=\"ds-site-row\"><div class=\"ds-emoji\">🌐</div><div class=\"ds-main\"><input class=\"ds-title\" value=\"LocalHost Monitor\" /><div class=\"ds-meta\"><a href=\"#\">http://localhost:3000</a><span class=\"ds-badge\">200 OK</span></div></div><button class=\"ds-btn-primary\">Open Website</button></div>",
+      "css": ".ds-site-row { display: flex; align-items: center; gap: 10px; padding: 10px; border-radius: 8px; background: #FFFFFF; border: 1px solid rgba(210,210,215,0.35); color: #1D1D1F; font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif; box-shadow: none; } .ds-emoji { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 7px; background: #FFFFFF; border: 1px solid rgba(210,210,215,0.55); font-size: 20px; flex: 0 0 auto; } .ds-main { min-width: 0; flex: 1; display: grid; gap: 6px; } .ds-title { min-width: 0; width: 100%; box-sizing: border-box; border: 1px solid #D2D2D7; border-radius: 6px; padding: 3px 6px; color: #1D1D1F; background: #FFFFFF; font: 600 14px/1.25 -apple-system, BlinkMacSystemFont, system-ui, sans-serif; } .ds-title:focus-visible { outline: 3px solid rgba(10,132,255,0.35); outline-offset: 1px; } .ds-meta { display: flex; align-items: center; gap: 6px; min-width: 0; } .ds-meta a { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #0066CC; font: 400 12px/1.2 -apple-system, BlinkMacSystemFont, system-ui, sans-serif; } .ds-badge { display: inline-flex; align-items: center; padding: 2px 6px; border-radius: 999px; background: #E8E8ED; color: #6E6E73; font: 400 11px/1.2 ui-monospace, SFMono-Regular, Menlo, monospace; white-space: nowrap; } .ds-btn-primary { background: #0A84FF; color: #FFFFFF; border: none; border-radius: 8px; padding: 6px 12px; min-width: 120px; font: 600 13px/1.25 -apple-system, BlinkMacSystemFont, system-ui, sans-serif; }"
+    },
+    {
+      "name": "Emoji Picker Button",
+      "kind": "button",
+      "refersTo": "button-borderless",
+      "description": "Fixed square identity affordance for choosing a site emoji.",
+      "html": "<button class=\"ds-emoji-btn\">🌐</button>",
+      "css": ".ds-emoji-btn { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 7px; background: #FFFFFF; border: 1px solid rgba(210,210,215,0.55); color: #1D1D1F; font-size: 20px; transition: background-color 160ms ease-out; } .ds-emoji-btn:hover { background: #F5F5F5; } .ds-emoji-btn:focus-visible { outline: 3px solid rgba(10,132,255,0.35); outline-offset: 2px; } .ds-emoji-btn:active { background: rgba(10,132,255,0.24); }"
+    },
+    {
+      "name": "Title Field",
+      "kind": "input",
+      "refersTo": "site-row",
+      "description": "Rounded native-feeling editable site title field.",
+      "html": "<input class=\"ds-title-field\" value=\"Development Site\" />",
+      "css": ".ds-title-field { width: 240px; border: 1px solid #D2D2D7; border-radius: 6px; padding: 3px 6px; background: #FFFFFF; color: #1D1D1F; font: 600 14px/1.25 -apple-system, BlinkMacSystemFont, system-ui, sans-serif; } .ds-title-field:focus-visible { outline: 3px solid rgba(10,132,255,0.35); outline-offset: 1px; } .ds-title-field:disabled { color: #8E8E93; background: #F5F5F5; }"
+    },
+    {
+      "name": "Menu Bar Commands",
+      "kind": "nav",
+      "refersTo": "button-borderless",
+      "description": "Native menu commands represented as plain, direct actions.",
+      "html": "<nav class=\"ds-menu\"><button>Show Window</button><button>Refresh</button><label><input type=\"checkbox\" /> View all entries</label><hr /><button>LocalHost Monitor</button><hr /><button>Quit LocalHost</button></nav>",
+      "css": ".ds-menu { width: 220px; display: grid; gap: 2px; padding: 6px; border-radius: 8px; background: #FFFFFF; border: 1px solid #D2D2D7; color: #1D1D1F; font: 400 13px/1.35 -apple-system, BlinkMacSystemFont, system-ui, sans-serif; box-shadow: none; } .ds-menu button, .ds-menu label { min-height: 24px; display: flex; align-items: center; gap: 6px; padding: 2px 8px; border: 0; border-radius: 5px; background: transparent; color: inherit; text-align: left; font: inherit; } .ds-menu button:hover, .ds-menu label:hover { background: #E8E8ED; } .ds-menu button:focus-visible { outline: 3px solid rgba(10,132,255,0.35); outline-offset: 1px; } .ds-menu hr { width: 100%; border: 0; border-top: 1px solid #D2D2D7; margin: 4px 0; }"
+    }
+  ]
+}

@@ -5,3 +5,4 @@ DerivedData/
 *.xcodeproj/project.xcworkspace/xcuserdata/
 *.xcworkspace/xcuserdata/
 *.xcuserstate
+.impeccable/critique/
