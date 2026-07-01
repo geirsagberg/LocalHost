@@ -151,12 +151,14 @@ private struct SiteRow: View {
             EmojiPickerButton(text: emojiBinding)
                 .frame(width: 34, height: 34)
                 .fixedSize()
+                .disabled(isKilling)
 
             VStack(alignment: .leading, spacing: 6) {
                 HStack(spacing: 6) {
                     TextField("Title", text: titleBinding)
                         .font(.system(size: 14, weight: .semibold))
                         .textFieldStyle(.roundedBorder)
+                        .disabled(isKilling)
 
                     Button {
                         viewModel.resetTitleOverride(for: presentation)
@@ -165,6 +167,7 @@ private struct SiteRow: View {
                             .frame(width: 18, height: 18)
                     }
                     .buttonStyle(.borderless)
+                    .disabled(isKilling)
                     .help("Use inferred title")
                 }
 
@@ -186,6 +189,7 @@ private struct SiteRow: View {
                             .frame(width: 18, height: 18)
                     }
                     .buttonStyle(.borderless)
+                    .disabled(isKilling)
                     .help("Copy URL")
 
                     MetadataBadge(text: presentation.statusText)
@@ -214,6 +218,7 @@ private struct SiteRow: View {
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.borderedProminent)
+                .disabled(isKilling)
                 .help("Open \(presentation.urlText)")
 
                 HStack(spacing: 4) {
@@ -221,16 +226,26 @@ private struct SiteRow: View {
                         .toggleStyle(.checkbox)
                         .controlSize(.small)
                         .fixedSize()
+                        .disabled(isKilling)
                         .help("Show only when View all is enabled")
 
-                    if viewModel.isKilling(presentation) {
-                        ProgressView()
-                            .controlSize(.small)
-                            .frame(width: 96, height: 24)
+                    if isKilling {
+                        HStack(spacing: 6) {
+                            ProgressView()
+                                .controlSize(.small)
+
+                            Text("Killing...")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                        .frame(width: 96, height: 24)
+                        .contentShape(Rectangle())
                             .help("Killing process")
                     } else {
                         Button {
-                            viewModel.killProcess(for: presentation)
+                            Task {
+                                await viewModel.killProcess(for: presentation)
+                            }
                         } label: {
                             Label("Kill Process", systemImage: "stop.circle")
                                 .frame(width: 96)
@@ -274,6 +289,10 @@ private struct SiteRow: View {
             get: { viewModel.isHidden(presentation) },
             set: { viewModel.setHidden($0, for: presentation) }
         )
+    }
+
+    private var isKilling: Bool {
+        viewModel.isKilling(presentation)
     }
 
 }

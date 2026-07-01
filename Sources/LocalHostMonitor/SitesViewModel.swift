@@ -16,20 +16,32 @@ final class SitesViewModel: ObservableObject {
     @Published private(set) var lastScanDate: Date?
     @Published private(set) var killingPorts: Set<Int> = []
 
-    private let scanner: LocalhostScanner
-    private let processTerminator: PortProcessTerminator
+    private let scanner: LocalhostScanning
+    private let processTerminator: ProcessTerminating
+    private let processTerminationConfirmer: ProcessTerminationConfirming
     private let preferencesStore: PreferencesStore
+    private let postTerminationRefreshDelayNanoseconds: UInt64
     private var refreshLoop: Task<Void, Never>?
+    private var confirmingPorts: Set<Int> = []
 
     init(
-        scanner: LocalhostScanner = LocalhostScanner(),
-        processTerminator: PortProcessTerminator = PortProcessTerminator(),
-        preferencesStore: PreferencesStore = PreferencesStore()
+        scanner: LocalhostScanning = LocalhostScanner(),
+        processTerminator: ProcessTerminating = PortProcessTerminator(),
+        processTerminationConfirmer: ProcessTerminationConfirming = NativeProcessTerminationConfirmer(),
+        preferencesStore: PreferencesStore = PreferencesStore(),
+        postTerminationRefreshDelayNanoseconds: UInt64 = 350_000_000,
+        startsRefreshLoop: Bool = true
     ) {
         self.scanner = scanner
         self.processTerminator = processTerminator
+        self.processTerminationConfirmer = processTerminationConfirmer
         self.preferencesStore = preferencesStore
+        self.postTerminationRefreshDelayNanoseconds = postTerminationRefreshDelayNanoseconds
         self.overrides = preferencesStore.load()
+
+        guard startsRefreshLoop else {
+            return
+        }
 
         refreshLoop = Task { [weak self] in
             await self?.refresh()
@@ -135,34 +147,44 @@ final class SitesViewModel: ObservableObject {
         killingPorts.contains(presentation.site.port)
     }
 
-    func killProcess(for presentation: SitePresentation) {
+    func killProcess(for presentation: SitePresentation) async {
         let site = presentation.site
-        guard !killingPorts.contains(site.port) else {
+        guard !confirmingPorts.contains(site.port), !killingPorts.contains(site.port) else {
             return
         }
 
-        let siteTitle = title(for: presentation)
-        killingPorts.insert(site.port)
-        sites.removeAll { $0.id == site.id }
+        confirmingPorts.insert(site.port)
+        let confirmationDetails = ProcessTerminationConfirmationDetails(
+            presentation: currentPresentation(for: presentation)
+        )
+        let isConfirmed = await processTerminationConfirmer.confirmProcessTermination(
+            details: confirmationDetails
+        )
+        confirmingPorts.remove(site.port)
 
-        Task {
-            do {
-                _ = try await processTerminator.terminateProcessListening(on: site.port)
-                killingPorts.remove(site.port)
-                try? await Task.sleep(nanoseconds: 350_000_000)
-                await refresh()
-            } catch PortProcessTerminationError.administratorPromptCancelled {
-                killingPorts.remove(site.port)
-                await refresh()
-            } catch {
-                killingPorts.remove(site.port)
-                alertMessage = UserAlertMessage(
-                    title: "Couldn't kill \(siteTitle)",
-                    message: error.localizedDescription
-                )
-                await refresh()
-            }
+        guard isConfirmed, !killingPorts.contains(site.port) else {
+            return
         }
+
+        killingPorts.insert(site.port)
+
+        do {
+            _ = try await processTerminator.terminateProcessListening(on: site.port)
+            try? await Task.sleep(nanoseconds: postTerminationRefreshDelayNanoseconds)
+            await refresh()
+        } catch PortProcessTerminationError.administratorPromptCancelled {
+            alertMessage = UserAlertMessage(
+                title: "Kill process cancelled",
+                message: "Administrator authorization was cancelled. \(confirmationDetails.title) was not killed."
+            )
+        } catch {
+            alertMessage = UserAlertMessage(
+                title: "Couldn't kill \(confirmationDetails.title)",
+                message: "\(error.localizedDescription)\n\nRefresh to scan the current localhost sites."
+            )
+        }
+
+        killingPorts.remove(site.port)
     }
 
     private func updateOverride(for key: String, mutate: (inout SiteOverride) -> Void) {
@@ -181,4 +203,79 @@ struct UserAlertMessage: Identifiable {
     let id = UUID()
     let title: String
     let message: String
+}
+
+protocol LocalhostScanning {
+    func scan() async -> [LocalhostSite]
+}
+
+extension LocalhostScanner: LocalhostScanning {}
+
+protocol ProcessTerminating {
+    func terminateProcessListening(on port: Int) async throws -> [Int]
+}
+
+extension PortProcessTerminator: ProcessTerminating {}
+
+struct ProcessTerminationConfirmationDetails: Equatable, Sendable {
+    let title: String
+    let urlText: String
+    let processName: String?
+    let pid: Int?
+    let port: Int
+
+    init(title: String, urlText: String, processName: String?, pid: Int?, port: Int) {
+        self.title = title
+        self.urlText = urlText
+        self.processName = processName
+        self.pid = pid
+        self.port = port
+    }
+
+    init(presentation: SitePresentation) {
+        self.title = presentation.title
+        self.urlText = presentation.urlText
+        self.processName = presentation.processName
+        self.pid = presentation.site.pid
+        self.port = presentation.site.port
+    }
+}
+
+protocol ProcessTerminationConfirming {
+    @MainActor
+    func confirmProcessTermination(details: ProcessTerminationConfirmationDetails) async -> Bool
+}
+
+struct NativeProcessTerminationConfirmer: ProcessTerminationConfirming {
+    @MainActor
+    func confirmProcessTermination(details: ProcessTerminationConfirmationDetails) async -> Bool {
+        let alert = NSAlert()
+        alert.alertStyle = .warning
+        alert.messageText = "Kill process for \(details.title)?"
+        alert.informativeText = informativeText(for: details)
+        alert.addButton(withTitle: "Kill Process")
+        alert.addButton(withTitle: "Cancel")
+
+        return alert.runModal() == .alertFirstButtonReturn
+    }
+
+    private func informativeText(for details: ProcessTerminationConfirmationDetails) -> String {
+        var facts = [
+            "URL: \(details.urlText)"
+        ]
+
+        if let processName = details.processName {
+            facts.append("Process: \(processName)")
+        }
+
+        if let pid = details.pid {
+            facts.append("PID: \(pid)")
+        }
+
+        facts.append("Port: \(details.port)")
+        facts.append("")
+        facts.append("This will send TERM to the process listening on this port.")
+
+        return facts.joined(separator: "\n")
+    }
 }

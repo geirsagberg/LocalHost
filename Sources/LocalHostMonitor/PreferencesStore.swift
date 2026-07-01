@@ -16,6 +16,15 @@ final class PreferencesStore {
         self.fileURL = directoryURL.appendingPathComponent("Sites.json")
     }
 
+    init(fileURL: URL, fileManager: FileManager = .default) {
+        self.fileURL = fileURL
+        self.fileManager = fileManager
+        try? fileManager.createDirectory(
+            at: fileURL.deletingLastPathComponent(),
+            withIntermediateDirectories: true
+        )
+    }
+
     func load() -> [String: SiteOverride] {
         guard let data = try? Data(contentsOf: fileURL) else {
             return [:]
