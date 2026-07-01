@@ -26,6 +26,10 @@ let package = Package(
         .testTarget(
             name: "LocalHostMonitorCoreTests",
             dependencies: ["LocalHostMonitorCore"]
+        ),
+        .testTarget(
+            name: "LocalHostMonitorTests",
+            dependencies: ["LocalHostMonitor"]
         )
     ]
 )
