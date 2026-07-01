@@ -4,6 +4,43 @@ import LocalHostMonitorCore
 
 @MainActor
 final class SitesViewModelAccessibilityTests: XCTestCase {
+    func testSiteRowActionStateKeepsSecondaryActionsQuietUntilNeeded() {
+        let defaultState = SiteRowActionState(
+            isKilling: false,
+            hasTitleOverride: false
+        )
+
+        XCTAssertTrue(defaultState.canOpenWebsite)
+        XCTAssertTrue(defaultState.canEditTitle)
+        XCTAssertFalse(defaultState.canResetTitle)
+        XCTAssertTrue(defaultState.canCopyURL)
+        XCTAssertTrue(defaultState.canToggleDefaultViewVisibility)
+        XCTAssertTrue(defaultState.canKillProcess)
+        XCTAssertFalse(defaultState.showsKillingProgress)
+
+        let customTitleState = SiteRowActionState(
+            isKilling: false,
+            hasTitleOverride: true
+        )
+
+        XCTAssertTrue(customTitleState.canResetTitle)
+    }
+
+    func testSiteRowActionStateDisablesRowActionsWhileKilling() {
+        let state = SiteRowActionState(
+            isKilling: true,
+            hasTitleOverride: true
+        )
+
+        XCTAssertFalse(state.canOpenWebsite)
+        XCTAssertFalse(state.canEditTitle)
+        XCTAssertFalse(state.canResetTitle)
+        XCTAssertFalse(state.canCopyURL)
+        XCTAssertFalse(state.canToggleDefaultViewVisibility)
+        XCTAssertFalse(state.canKillProcess)
+        XCTAssertTrue(state.showsKillingProgress)
+    }
+
     func testTitleResetAvailabilityTracksCustomTitleState() async throws {
         let site = try makeSite()
         let viewModel = makeViewModel(sites: [site])

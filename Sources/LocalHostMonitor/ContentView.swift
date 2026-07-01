@@ -182,38 +182,38 @@ private struct EmptyStateView: View {
 private struct SiteRow: View {
     let presentation: SitePresentation
     @ObservedObject var viewModel: SitesViewModel
+    @State private var isEditingTitle = false
 
     var body: some View {
         HStack(spacing: 10) {
             EmojiPickerButton(text: emojiBinding, siteTitle: presentation.title)
                 .frame(width: 34, height: 34)
                 .fixedSize()
-                .disabled(isKilling)
+                .disabled(!actionState.canEditTitle)
 
             VStack(alignment: .leading, spacing: 6) {
-                HStack(spacing: 6) {
+                if isEditingTitle {
                     TextField("Title", text: titleBinding)
                         .font(.system(size: 14, weight: .semibold))
                         .textFieldStyle(.roundedBorder)
-                        .disabled(isKilling)
+                        .disabled(!actionState.canEditTitle)
+                        .onSubmit {
+                            isEditingTitle = false
+                        }
                         .accessibilityLabel("Localhost site title")
                         .accessibilityValue(titleBinding.wrappedValue)
                         .accessibilityHint("Edits the display title for this localhost site.")
-
-                    Button {
-                        viewModel.resetTitleOverride(for: presentation)
-                    } label: {
-                        Image(systemName: "arrow.counterclockwise.circle")
-                            .frame(width: 18, height: 18)
-                    }
-                    .buttonStyle(.borderless)
-                    .disabled(isKilling || !canResetTitleOverride)
-                    .help(resetTitleHelpText)
-                    .accessibilityLabel("Reset custom title")
-                    .accessibilityHint(resetTitleHelpText)
+                } else {
+                    Text(presentation.title)
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(.primary)
+                        .lineLimit(1)
+                        .truncationMode(.tail)
+                        .accessibilityLabel("Localhost site title")
+                        .accessibilityValue(presentation.title)
                 }
 
-                HStack(alignment: .firstTextBaseline, spacing: 6) {
+                HStack(alignment: .center, spacing: 6) {
                     Link(destination: presentation.site.url) {
                         Text(presentation.urlText)
                             .font(.caption)
@@ -226,19 +226,6 @@ private struct SiteRow: View {
                     .accessibilityValue(presentation.urlText)
                     .accessibilityHint("Opens this localhost site in the default browser.")
                     .layoutPriority(1)
-
-                    Button {
-                        viewModel.copyURL(presentation)
-                    } label: {
-                        Image(systemName: copyFeedbackText == nil ? "doc.on.doc" : "checkmark")
-                            .frame(width: 18, height: 18)
-                    }
-                    .buttonStyle(.borderless)
-                    .disabled(isKilling)
-                    .help("Copy URL")
-                    .accessibilityLabel("Copy URL")
-                    .accessibilityValue(copyFeedbackText ?? presentation.urlText)
-                    .accessibilityHint("Copies \(presentation.urlText) to the clipboard.")
 
                     Text(copyFeedbackText ?? "Copied")
                         .font(.caption2)
@@ -282,56 +269,30 @@ private struct SiteRow: View {
 
             Spacer(minLength: 4)
 
-            VStack(alignment: .trailing, spacing: 8) {
+            HStack(spacing: 6) {
                 Button {
                     viewModel.open(presentation)
                 } label: {
                     Label("Open Website", systemImage: "arrow.up.right.square")
-                        .frame(maxWidth: .infinity)
+                        .frame(minWidth: 112)
                 }
                 .buttonStyle(.borderedProminent)
-                .disabled(isKilling)
+                .disabled(!actionState.canOpenWebsite)
                 .help("Open \(presentation.urlText)")
                 .accessibilityLabel("Open localhost site")
                 .accessibilityValue(presentation.urlText)
 
-                HStack(spacing: 4) {
-                    Toggle("Hide", isOn: hiddenBinding)
-                        .toggleStyle(.checkbox)
+                if actionState.showsKillingProgress {
+                    ProgressView()
                         .controlSize(.small)
-                        .fixedSize()
-                        .disabled(isKilling)
-                        .help("Show when Show hidden is enabled")
-
-                    if isKilling {
-                        HStack(spacing: 6) {
-                            ProgressView()
-                                .controlSize(.small)
-
-                            Text("Killing...")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
-                        .frame(width: 96, height: 24)
-                        .contentShape(Rectangle())
+                        .frame(width: 26, height: 26)
                         .help("Killing process")
-                    } else {
-                        Button {
-                            Task {
-                                await viewModel.killProcess(for: presentation)
-                            }
-                        } label: {
-                            Label("Kill Process", systemImage: "stop.circle")
-                                .frame(width: 96)
-                        }
-                        .buttonStyle(.bordered)
-                        .controlSize(.small)
-                        .foregroundStyle(.red)
-                        .help("Kill process")
-                    }
+                        .accessibilityLabel("Killing process")
+                } else {
+                    secondaryActionsMenu
                 }
             }
-            .frame(width: 206, alignment: .trailing)
+            .frame(width: 178, alignment: .trailing)
         }
         .padding(10)
         .background(
@@ -345,6 +306,60 @@ private struct SiteRow: View {
         .accessibilityElement(children: .contain)
         .accessibilityLabel("Localhost site")
         .accessibilityValue(presentation.accessibilitySummary)
+    }
+
+    private var secondaryActionsMenu: some View {
+        Menu {
+            Button {
+                isEditingTitle.toggle()
+            } label: {
+                Label(
+                    isEditingTitle ? "Done Editing Title" : "Edit Title",
+                    systemImage: isEditingTitle ? "checkmark" : "pencil"
+                )
+            }
+            .disabled(!actionState.canEditTitle)
+
+            Button {
+                viewModel.resetTitleOverride(for: presentation)
+            } label: {
+                Label("Reset Title", systemImage: "arrow.counterclockwise")
+            }
+            .disabled(!actionState.canResetTitle)
+
+            Divider()
+
+            Button {
+                viewModel.copyURL(presentation)
+            } label: {
+                Label(
+                    copyFeedbackText ?? "Copy URL",
+                    systemImage: copyFeedbackText == nil ? "doc.on.doc" : "checkmark"
+                )
+            }
+            .disabled(!actionState.canCopyURL)
+
+            Toggle("Hide from Default View", isOn: hiddenBinding)
+                .disabled(!actionState.canToggleDefaultViewVisibility)
+
+            Divider()
+
+            Button(role: .destructive) {
+                Task {
+                    await viewModel.killProcess(for: presentation)
+                }
+            } label: {
+                Label("Kill Process", systemImage: "stop.circle")
+            }
+            .disabled(!actionState.canKillProcess)
+        } label: {
+            Image(systemName: "ellipsis.circle")
+                .frame(width: 26, height: 26)
+        }
+        .menuStyle(.borderlessButton)
+        .fixedSize()
+        .help("More actions")
+        .accessibilityLabel("More actions for \(presentation.title)")
     }
 
     private var titleBinding: Binding<String> {
@@ -372,27 +387,15 @@ private struct SiteRow: View {
         viewModel.isKilling(presentation)
     }
 
+    private var actionState: SiteRowActionState {
+        SiteRowActionState(
+            isKilling: isKilling,
+            hasTitleOverride: canResetTitleOverride
+        )
+    }
+
     private var canResetTitleOverride: Bool {
         viewModel.canResetTitleOverride(for: presentation)
-    }
-
-    private var resetTitleHelpText: String {
-        if canResetTitleOverride {
-            return "Use inferred title \(titleResetTarget)"
-        }
-
-        return "No custom title to reset"
-    }
-
-    private var titleResetTarget: String {
-        let inferredTitle = presentation.site.inferredTitle?
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-
-        if let inferredTitle, !inferredTitle.isEmpty {
-            return inferredTitle
-        }
-
-        return presentation.site.fallbackTitle
     }
 
     private var copyFeedbackText: String? {
