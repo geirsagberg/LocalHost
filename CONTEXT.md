@@ -21,5 +21,5 @@ The preference-aware view of a localhost site used by the window and menu bar ac
 _Avoid_: view model row, UI state
 
 **Default view**:
-The normal filtered list of localhost sites, showing visible `200 OK` sites unless the user chooses to view all entries.
+The normal filtered list of localhost sites, showing visible OK-status sites unless the user chooses to include explicitly hidden sites, non-OK localhost sites, or both.
 _Avoid_: filtered mode, main list

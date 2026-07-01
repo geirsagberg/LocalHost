@@ -24,7 +24,7 @@ Avoid marketing-site gloss, decorative dashboards, loud gradients, novelty contr
 
 Make the local environment legible at a glance.
 
-Keep the default view calm and useful, with deeper detail available when the user asks for all entries.
+Keep the default view calm and useful, with deeper detail available through explicit hidden-site and non-OK controls.
 
 Use native macOS patterns as the baseline for trust, speed, and accessibility.
 

@@ -51,14 +51,20 @@ private struct HeaderView: View {
 
             Spacer()
 
-            Toggle("View all", isOn: $viewModel.showsAllResponses)
+            Toggle("Show hidden", isOn: $viewModel.includesHiddenSites)
                 .toggleStyle(.switch)
                 .controlSize(.small)
                 .disabled(viewModel.sites.isEmpty)
-                .help("Show hidden sites and localhost sites that return any HTTP status")
+                .help("Show explicitly hidden localhost sites")
+
+            Toggle("Show non-OK", isOn: $viewModel.includesNonOKSites)
+                .toggleStyle(.switch)
+                .controlSize(.small)
+                .disabled(viewModel.sites.isEmpty)
+                .help("Show localhost sites that return non-OK HTTP status")
 
             if let lastScanDate = viewModel.lastScanDate {
-                Text(Self.timeFormatter.string(from: lastScanDate))
+                Text("Updated \(Self.timeFormatter.string(from: lastScanDate))")
                     .font(.caption.monospacedDigit())
                     .foregroundStyle(.secondary)
             }
@@ -110,35 +116,53 @@ private struct EmptyStateView: View {
                 .font(.headline)
                 .foregroundStyle(.primary)
 
+            if let message = viewModel.emptyStateMessage {
+                Text(message)
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
             if !isLoadingInitialSites {
-                Button {
-                    Task { await viewModel.refresh() }
-                } label: {
-                    Image(systemName: "arrow.clockwise")
-                        .frame(width: 18, height: 18)
+                HStack(spacing: 8) {
+                    ForEach(viewModel.emptyStateRecoveryActions) { action in
+                        Button(action.title) {
+                            recover(from: action)
+                        }
+                        .buttonStyle(.bordered)
+                    }
+
+                    Button {
+                        Task { await viewModel.refresh() }
+                    } label: {
+                        Image(systemName: "arrow.clockwise")
+                            .frame(width: 18, height: 18)
+                    }
+                    .buttonStyle(.bordered)
+                    .disabled(viewModel.isScanning)
+                    .help("Refresh")
                 }
-                .buttonStyle(.bordered)
-                .disabled(viewModel.isScanning)
-                .help("Refresh")
             }
         }
         .padding(32)
     }
 
     private var title: String {
-        if isLoadingInitialSites {
-            return "Loading localhost sites"
-        }
-
-        if !viewModel.sites.isEmpty && !viewModel.showsAllResponses {
-            return "No visible localhost sites"
-        }
-
-        return "No localhost sites"
+        viewModel.emptyStateTitle
     }
 
     private var isLoadingInitialSites: Bool {
-        viewModel.isScanning && viewModel.lastScanDate == nil
+        viewModel.isLoadingInitialSites
+    }
+
+    private func recover(from action: DefaultViewRecoveryAction) {
+        switch action {
+        case .showHidden:
+            viewModel.includesHiddenSites = true
+        case .showNonOK:
+            viewModel.includesNonOKSites = true
+        }
     }
 }
 
@@ -221,7 +245,7 @@ private struct SiteRow: View {
                         .toggleStyle(.checkbox)
                         .controlSize(.small)
                         .fixedSize()
-                        .help("Show only when View all is enabled")
+                        .help("Show when Show hidden is enabled")
 
                     if viewModel.isKilling(presentation) {
                         ProgressView()
